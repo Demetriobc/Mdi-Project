@@ -1,0 +1,61 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Ambientes virtuais ────────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Variáveis de ambiente ─────────────────────────────────────────────────────
+.env
+*.env.local
+*.env.*.local
+
+# ── Artefatos de modelo (gerados no treino) ───────────────────────────────────
+artifacts/model/*.joblib
+artifacts/model/metadata.json
+artifacts/vectorstore/
+
+# ── Dados brutos e processados ────────────────────────────────────────────────
+data/raw/*.csv
+data/processed/
+# Manter knowledge base versionada
+!data/knowledge_base/
+
+# ── Jupyter ───────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+logs/
+*.log
+
+# ── Cache ─────────────────────────────────────────────────────────────────────
+.cache/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+.dockerignore
+
+# ── Railway ───────────────────────────────────────────────────────────────────
+.railway/
