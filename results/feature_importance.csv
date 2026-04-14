@@ -1,0 +1,22 @@
+feature,importance_gain,rank_gain,importance_shap,rank_shap,description
+grade,0.432685,1,0.096542,3,Qualidade construtiva e de design (escala KC 1–13)
+sqft_living,0.150614,2,0.127095,2,Área útil interior em sqft
+lat,0.119245,3,0.235505,1,Latitude — captura micro-localização norte-sul em King County
+waterfront,0.057383,4,0.004058,20,Frente para a água (binária) — alto ganho por split; baixo impacto médio por raridade
+view,0.044907,5,0.021145,9,Qualidade da vista (ordinal 0–4)
+sqft_living15,0.025596,6,0.038749,5,Área útil média dos 15 vizinhos mais próximos — proxy de padrão da vizinhança
+sqft_above,0.023222,7,0.025905,7,Área acima do nível do solo
+was_renovated,0.018017,8,0.0,0,Flag binária de renovação (SHAP não listado separadamente no top-20)
+long,0.017538,9,0.046737,4,Longitude — captura gradiente leste-oeste (Eastside vs subúrbios sul)
+bathrooms,0.014561,10,0.007237,17,Número de banheiros
+house_age,0.013979,11,0.014174,12,Idade do imóvel (2015 - yr_built)
+condition,0.012579,12,0.027030,6,Condição do imóvel (ordinal 1–5)
+zipcode,0.011119,13,0.014014,13,Código postal — proxy de localização e perfil de bairro
+years_since_renovation,0.010217,14,0.022654,8,Anos desde a última renovação
+sqft_lot15,0.007368,15,0.008842,16,Área de lote média dos 15 vizinhos
+sqft_lot,0.006774,16,0.019975,10,Área total do lote
+living_lot_ratio,0.006039,17,0.013553,14,sqft_living / sqft_lot — densidade de ocupação do lote
+living15_ratio,0.005680,18,0.006163,18,sqft_living / sqft_living15 — relação do imóvel com os vizinhos
+bath_bed_ratio,0.005013,19,0.010073,15,bathrooms / (bedrooms + 1) — proxy de padrão e luxo
+sqft_basement,0.004365,20,0.005458,19,Área do porão em sqft
+sale_month,0.0,0,0.017961,11,Mês da venda — captura sazonalidade (gain baixo; SHAP relevante)

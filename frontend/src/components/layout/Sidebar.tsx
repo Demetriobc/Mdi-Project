@@ -303,7 +303,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           )}
         </button>
         <p className="text-center text-[10px] text-muted-foreground">
-          Modelo: XGBoost · Atualizado: Nov 2024
+          Modelo usado XGBoost 
         </p>
       </div>
     </aside>

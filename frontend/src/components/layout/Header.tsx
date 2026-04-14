@@ -105,14 +105,14 @@ function AboutModal({ onClose }: { onClose: () => void }) {
           </div>
           <div>
             <h2 className="text-base font-bold text-foreground">Demetrio — madeinweb</h2>
-            <p className="text-xs text-muted-foreground">King County, Washington · 2014–2015</p>
+            <p className="text-xs text-muted-foreground">2014-2015 dados</p>
           </div>
         </div>
 
         <p className="text-sm text-muted-foreground leading-relaxed mb-5">
           Ferramenta de análise inteligente de imóveis que combina Machine Learning,
-          Retrieval-Augmented Generation (RAG) e um chat com LLM para entregar previsões
-          de preço com contexto de mercado.
+           RAG e um chat com LLM para entregar previsões
+          de preço com contexto sobre o mercado
         </p>
 
         {/* Tech stack */}
@@ -142,7 +142,7 @@ function AboutModal({ onClose }: { onClose: () => void }) {
 
         {/* GitHub link placeholder */}
         <a
-          href="https://github.com"
+          href="https://github.com/Demetriobc"
           target="_blank"
           rel="noopener noreferrer"
           className="flex w-full items-center justify-center gap-2 rounded-lg border border-border py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
