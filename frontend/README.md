@@ -32,6 +32,8 @@ docker build -f frontend/Dockerfile ./frontend -t house-ui \
   --build-arg VITE_API_BASE_URL=https://SUA-API.up.railway.app
 ```
 
+A imagem final usa **nginx** a servir o `dist/` na `PORT` da Railway (o `serve` em Node falhava com “Application failed to respond” em alguns deploys).
+
 ## Scripts
 
 | Comando | Descrição |
