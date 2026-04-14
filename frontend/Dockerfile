@@ -18,6 +18,9 @@ RUN npm run build \
 
 FROM nginx:1.27-alpine
 
+# Evita dezenas de workers (worker_processes auto no host da Railway → risco de OOM).
+RUN sed -i 's/^worker_processes.*/worker_processes 1;/' /etc/nginx/nginx.conf
+
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf.template /tmp/default.conf.tpl
 COPY docker-entrypoint.sh /docker-entrypoint.sh
