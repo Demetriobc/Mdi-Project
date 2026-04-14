@@ -1,0 +1,13 @@
+# Build longo: treino XGBoost + índice FAISS dentro do Docker.
+# No painel Railway: aumente timeout/recursos do build se falhar.
+# Opcional: Build Args → KC_HOUSE_DATA_URL (URL do CSV KC House).
+# https://docs.railway.com/reference/config-as-code
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

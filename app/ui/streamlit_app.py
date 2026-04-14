@@ -1,13 +1,4 @@
-"""
-Interface principal do House Price Copilot.
-
-Consome a API FastAPI — nenhuma lógica de ML ou RAG aqui.
-Toda a inteligência fica nos serviços da API.
-
-Layout:
-  Sidebar  → formulário de entrada do imóvel
-  Main     → preço previsto + contexto + explicação AI + chat
-"""
+"""Streamlit: só HTTP na API FastAPI (ML/RAG/LLM ficam no backend)."""
 
 from __future__ import annotations
 
@@ -19,7 +10,7 @@ import streamlit as st
 
 # ── Configuração de página ─────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="House Price Copilot",
+    page_title="madeinweb-teste",
     page_icon="🏠",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -66,9 +57,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ── Funções de API ────────────────────────────────────────────────────────────
-def _call_api(method: str, path: str, payload: dict | None = None) -> dict | None:
-    """Wrapper genérico para chamadas à API com tratamento de erro."""
+def request_api_json(method: str, path: str, payload: dict | None = None) -> dict | None:
     try:
         url = f"{API_BASE_URL}{path}"
         if method == "GET":
@@ -80,7 +69,7 @@ def _call_api(method: str, path: str, payload: dict | None = None) -> dict | Non
     except requests.exceptions.ConnectionError:
         st.error(
             f"API indisponível em `{API_BASE_URL}`. "
-            "Execute `python -m uvicorn app.api.main:app --port 8001` no terminal."
+            "Suba o backend: `python -m uvicorn app.api.main:app --port 8001`."
         )
         return None
     except requests.exceptions.HTTPError as e:
@@ -92,25 +81,28 @@ def _call_api(method: str, path: str, payload: dict | None = None) -> dict | Non
 
 
 def check_api_health() -> bool:
-    data = _call_api("GET", "/health")
+    data = request_api_json("GET", "/health")
     return data is not None and data.get("status") in ("ok", "degraded")
 
 
-def predict(house_data: dict) -> dict | None:
-    return _call_api("POST", "/predict", house_data)
+def fetch_price_prediction(house_data: dict) -> dict | None:
+    return request_api_json("POST", "/predict", house_data)
 
 
-def get_explanation(context: dict) -> dict | None:
-    return _call_api("POST", "/chat/explain", context)
+def fetch_initial_explanation(prediction_json: dict) -> dict | None:
+    return request_api_json("POST", "/chat/explain", prediction_json)
 
 
 def send_chat(message: str, context: dict | None, history: list) -> dict | None:
-    payload = {
-        "message": message,
-        "prediction_context": context,
-        "conversation_history": history,
-    }
-    return _call_api("POST", "/chat", payload)
+    return request_api_json(
+        "POST",
+        "/chat",
+        {
+            "message": message,
+            "prediction_context": context,
+            "conversation_history": history,
+        },
+    )
 
 
 # ── Formulário de entrada ─────────────────────────────────────────────────────
@@ -389,7 +381,7 @@ def render_chat(prediction_context: dict | None) -> None:
 def render_welcome() -> None:
     st.markdown("""
     <div style="text-align: center; padding: 3rem 1rem;">
-        <h1 style="font-size: 2.5rem;">🏠 House Price Copilot</h1>
+        <h1 style="font-size: 2.5rem;">🏠 madeinweb-teste</h1>
         <p style="font-size: 1.2rem; color: #a0aec0; max-width: 600px; margin: 1rem auto;">
             Previsão de preços de imóveis em <strong>King County, WA</strong>
             com <strong>Machine Learning</strong> + <strong>IA Generativa</strong>.
@@ -415,7 +407,7 @@ def render_welcome() -> None:
 def main() -> None:
     # Header
     st.markdown(
-        "<h2 style='margin-bottom:0'>🏠 House Price Copilot</h2>"
+        "<h2 style='margin-bottom:0'>🏠 madeinweb-teste</h2>"
         "<p style='color:#a0aec0;margin-top:0'>King County, WA · XGBoost + RAG + LLM</p>",
         unsafe_allow_html=True,
     )
@@ -427,7 +419,7 @@ def main() -> None:
     # Ação: nova predição
     if house_data:
         with st.spinner("Calculando preço..."):
-            result = predict(house_data)
+            result = fetch_price_prediction(house_data)
 
         if result:
             st.session_state.prediction = result
@@ -436,7 +428,7 @@ def main() -> None:
 
             # Gera explicação automática
             with st.spinner("Gerando explicação..."):
-                expl = get_explanation(result)
+                expl = fetch_initial_explanation(result)
             if expl:
                 st.session_state.explanation = expl
 

@@ -117,8 +117,7 @@ class HouseInput(BaseModel):
         """
         Converte o schema para o dicionário esperado pelo pipeline de ML.
 
-        Não inclui `date` — o `HousePriceFeatureEngineer` usa fallback
-        para sale_month=1 quando essa coluna está ausente.
+        Sem `date`: na inferência `sale_month` cai no fallback (=1), igual ao pipeline.
         """
         return self.model_dump()
 
@@ -147,6 +146,17 @@ class PredictionResponse(BaseModel):
     price_vs_median_pct: float | None = Field(
         default=None,
         description="Quanto o preço previsto desvia da mediana do zipcode (%)",
+    )
+
+    # Intervalo de confiança (P10–P90 via quantile regression)
+    # ~80% de probabilidade de o preço real ficar dentro deste intervalo
+    price_p10: float | None = Field(
+        default=None,
+        description="Limite inferior do intervalo de confiança (percentil 10)",
+    )
+    price_p90: float | None = Field(
+        default=None,
+        description="Limite superior do intervalo de confiança (percentil 90)",
     )
 
     # Metadados do modelo

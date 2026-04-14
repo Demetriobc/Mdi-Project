@@ -1,15 +1,4 @@
-"""
-Serviço de predição.
-
-Camada de orquestração entre o endpoint HTTP e o núcleo de ML.
-Responsabilidades:
-- Converter o schema Pydantic para o formato do modelo
-- Chamar o módulo de inferência
-- Enriquecer o resultado com contexto de mercado (mediana do zipcode)
-- Construir o PredictionResponse para a API
-
-Regra: nenhuma lógica de ML vive aqui. Este serviço apenas coordena.
-"""
+"""Schema Pydantic → dict → predict_price; enriquece com mediana do zip (DB ou metadata)."""
 
 from __future__ import annotations
 
@@ -22,59 +11,44 @@ from app.api.schemas.prediction import (
     PredictionResponse,
 )
 from app.core.logger import get_logger
+from app.db.crud import get_zipcode_median
+from app.db.session import db_available, get_session_factory
+from app.ml.model_registry import artifacts_exist, load_metadata
 from app.ml.predict import PredictionResult, predict_batch, predict_price
-from app.ml.model_registry import load_metadata, artifacts_exist
 
 logger = get_logger(__name__)
 
 
-# ── Contexto de mercado por zipcode ───────────────────────────────────────────
-
 @lru_cache(maxsize=1)
-def _load_zipcode_stats() -> dict[str, float]:
-    """
-    Carrega as medianas de preço por zipcode dos metadados do modelo.
-
-    Retorna dicionário vazio se os metadados não estiverem disponíveis.
-    Os zipcode stats são derivados do dataset de treino durante `train.py`
-    e armazenados em metadata.json.
-    """
+def _zip_median_prices_from_last_training() -> dict[str, float]:
     if not artifacts_exist():
         return {}
-
     try:
-        metadata = load_metadata()
-        return metadata.get("zipcode_median_prices", {})
+        return load_metadata().get("zipcode_median_prices", {})
     except Exception as e:
-        logger.warning(f"Não foi possível carregar zipcode stats: {e}")
+        logger.warning("metadata.json sem medianas de zip: %s", e)
         return {}
 
 
-def _enrich_with_market_context(
-    result: PredictionResult,
-    zipcode: str,
-) -> tuple[float | None, float | None]:
-    """
-    Busca a mediana de preço do zipcode e calcula o desvio percentual.
-
-    Returns:
-        (zipcode_median_price, price_vs_median_pct)
-    """
-    stats = _load_zipcode_stats()
-    median = stats.get(zipcode)
-
-    if median is None:
-        return None, None
-
-    pct_diff = ((result.predicted_price - median) / median) * 100
-    return round(median, 2), round(pct_diff, 2)
+def median_training_price_for_zipcode(zipcode: str) -> float | None:
+    if db_available():
+        factory = get_session_factory()
+        if factory:
+            with factory() as db:
+                m = get_zipcode_median(db, zipcode)
+                if m is not None:
+                    return m
+    return _zip_median_prices_from_last_training().get(zipcode)
 
 
-# ── Conversão de resultado ────────────────────────────────────────────────────
+def pct_vs_median(predicted: float, median: float) -> float:
+    return round((predicted - median) / median * 100, 2)
 
-def _to_response(result: PredictionResult) -> PredictionResponse:
-    """Converte PredictionResult (ML) → PredictionResponse (API)."""
-    zipcode_median, pct_diff = _enrich_with_market_context(result, result.zipcode)
+
+def prediction_result_to_response(result: PredictionResult) -> PredictionResponse:
+    median = median_training_price_for_zipcode(result.zipcode)
+    zipcode_median = round(median, 2) if median is not None else None
+    pct = pct_vs_median(result.predicted_price, median) if median is not None else None
 
     return PredictionResponse(
         predicted_price=result.predicted_price,
@@ -88,57 +62,28 @@ def _to_response(result: PredictionResult) -> PredictionResponse:
         model_version=result.model_version,
         top_features=result.top_features,
         zipcode_median_price=zipcode_median,
-        price_vs_median_pct=pct_diff,
+        price_vs_median_pct=pct,
+        price_p10=result.price_p10,
+        price_p90=result.price_p90,
     )
 
-
-# ── Interface pública do serviço ──────────────────────────────────────────────
 
 def predict_single(house: HouseInput) -> PredictionResponse:
-    """
-    Executa a predição para um único imóvel.
-
-    Args:
-        house: dados validados pelo schema Pydantic
-
-    Returns:
-        PredictionResponse com preço previsto e contexto de mercado
-
-    Raises:
-        FileNotFoundError: artefatos não gerados (make train)
-        ValueError: input inválido que o modelo não consegue processar
-    """
     logger.info(
-        f"Predição solicitada — zipcode: {house.zipcode}, "
-        f"sqft: {house.sqft_living}, grade: {house.grade}"
+        "Predição zip=%s sqft=%s grade=%s",
+        house.zipcode,
+        house.sqft_living,
+        house.grade,
     )
-
-    model_input = house.to_model_input()
-    result = predict_price(model_input)
-
-    logger.info(f"Preço previsto: {result.predicted_price_formatted}")
-    return _to_response(result)
+    raw = predict_price(house.to_model_input())
+    logger.info("Preço: %s", raw.predicted_price_formatted)
+    return prediction_result_to_response(raw)
 
 
 def predict_many(request: BatchPredictionRequest) -> BatchPredictionResponse:
-    """
-    Executa predição em lote.
-
-    Mais eficiente que múltiplas chamadas ao endpoint single para
-    casos de uso como análise de portfólio ou comparação de imóveis.
-    """
-    logger.info(f"Predição em lote — {len(request.houses)} imóveis")
-
-    model_inputs = [house.to_model_input() for house in request.houses]
-    results = predict_batch(model_inputs)
-
-    responses = [_to_response(r) for r in results]
-    model_version = responses[0].model_version if responses else "unknown"
-
-    logger.info(f"Lote processado: {len(responses)} previsões")
-
-    return BatchPredictionResponse(
-        predictions=responses,
-        count=len(responses),
-        model_version=model_version,
-    )
+    logger.info("Lote: %s imóveis", len(request.houses))
+    rows = [h.to_model_input() for h in request.houses]
+    results = predict_batch(rows)
+    responses = [prediction_result_to_response(r) for r in results]
+    ver = responses[0].model_version if responses else "unknown"
+    return BatchPredictionResponse(predictions=responses, count=len(responses), model_version=ver)

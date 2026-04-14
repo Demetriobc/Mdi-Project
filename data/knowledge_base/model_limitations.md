@@ -1,4 +1,4 @@
-# Limitações do Modelo — House Price Copilot
+# Limitações do Modelo — madeinweb-teste
 
 Este documento descreve de forma honesta as limitações do modelo preditivo para
 que usuários e analistas possam interpretar as previsões com o nível correto de confiança.

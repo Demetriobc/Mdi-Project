@@ -14,6 +14,8 @@ from fastapi.responses import JSONResponse
 from app.api.routes import chat, health, predict
 from app.core.config import settings
 from app.core.logger import configure_root_logger, get_logger
+from app.db.init_db import init_db
+from app.db.session import db_available
 from app.ml.model_registry import artifacts_exist
 from app.rag.retriever import vectorstore_exists
 
@@ -51,8 +53,15 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("LLM: sem API key — chat em modo degradado")
 
+    # Inicializa banco (cria tabelas + seed zipcodes)
+    init_db()
+    if db_available():
+        logger.info("PostgreSQL: conectado")
+    else:
+        logger.warning("PostgreSQL: nao configurado — logs de predicao desabilitados")
+
     logger.info(f"API rodando em http://{settings.api_host}:{settings.api_port}")
-    logger.info("Docs: http://localhost:8000/docs")
+    logger.info(f"Docs: http://localhost:{settings.api_port}/docs")
 
     yield
 
@@ -62,11 +71,11 @@ async def lifespan(app: FastAPI):
 # ── Aplicação ─────────────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title="House Price Copilot API",
+    title="madeinweb-teste API",
     description=(
         "API para previsão e explicação de preços de imóveis em King County, WA. "
-        "Combina XGBoost (ML) + RAG (FAISS) + LLM (OpenAI) para gerar previsões "
-        "precisas com explicações em linguagem natural."
+        "Combina XGBoost (ML) + RAG (FAISS) + LLM para gerar previsões "
+        "com explicações em linguagem natural."
     ),
     version=settings.app_version,
     lifespan=lifespan,

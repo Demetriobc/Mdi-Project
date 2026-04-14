@@ -1,13 +1,4 @@
-"""
-Serviço de LLM.
-
-Responsabilidade única: enviar mensagens formatadas à API da OpenAI e
-retornar a resposta. Não sabe nada sobre predição, RAG ou contexto de negócio.
-
-Inclui fallback gracioso para quando o LLM não está disponível
-(sem API key, sem créditos, timeout), garantindo que o resto do sistema
-continue funcionando.
-"""
+"""OpenAI-compatible client (OpenAI ou Groq); devolve texto + flag de sucesso."""
 
 from __future__ import annotations
 
@@ -19,7 +10,7 @@ logger = get_logger(__name__)
 # Mensagem exibida quando o LLM não está disponível
 LLM_UNAVAILABLE_MESSAGE = (
     "O assistente de IA não está disponível no momento "
-    "(chave OpenAI não configurada ou sem créditos). "
+    "(provedor LLM não configurado ou sem créditos). "
     "A previsão de preço acima foi gerada pelo modelo de Machine Learning "
     "e permanece válida."
 )
@@ -30,37 +21,43 @@ def call_llm(
     temperature: float | None = None,
     max_tokens: int | None = None,
 ) -> tuple[str, bool]:
-    """
-    Chama o LLM com a lista de mensagens fornecida.
-
-    Args:
-        messages: lista no formato OpenAI [{"role": ..., "content": ...}]
-        temperature: sobrescreve o padrão do settings se fornecido
-        max_tokens: sobrescreve o padrão do settings se fornecido
-
-    Returns:
-        (resposta_texto, llm_disponivel)
-        Se o LLM falhar, retorna (mensagem_fallback, False).
-    """
-    if not settings.has_openai_key:
-        logger.warning("LLM não chamado: OPENAI_API_KEY não configurada.")
+    """Retorna (texto, ok). Se falhar ou sem chave, texto é mensagem amigável e ok=False."""
+    if not settings.has_llm_key:
+        logger.warning("LLM nao chamado: chave do provedor nao configurada.")
         return LLM_UNAVAILABLE_MESSAGE, False
 
     try:
         from openai import OpenAI
 
-        client = OpenAI(api_key=settings.openai_api_key)
+        provider = settings.llm_provider.lower()
+        model = settings.openai_model
+        api_key = settings.openai_api_key
+        temperature_default = settings.openai_temperature
+        max_tokens_default = settings.openai_max_tokens
+        client_kwargs: dict[str, str] = {"api_key": api_key}
+
+        if provider == "groq":
+            model = settings.groq_model
+            api_key = settings.groq_api_key
+            temperature_default = settings.groq_temperature
+            max_tokens_default = settings.groq_max_tokens
+            client_kwargs = {
+                "api_key": api_key,
+                "base_url": "https://api.groq.com/openai/v1",
+            }
+
+        client = OpenAI(**client_kwargs)
 
         response = client.chat.completions.create(
-            model=settings.openai_model,
+            model=model,
             messages=messages,
-            temperature=temperature or settings.openai_temperature,
-            max_tokens=max_tokens or settings.openai_max_tokens,
+            temperature=temperature if temperature is not None else temperature_default,
+            max_tokens=max_tokens if max_tokens is not None else max_tokens_default,
         )
 
         answer = response.choices[0].message.content or ""
         logger.debug(
-            f"LLM respondeu: {len(answer)} chars | "
+            f"LLM ({provider}) respondeu: {len(answer)} chars | "
             f"tokens usados: {response.usage.total_tokens if response.usage else 'N/A'}"
         )
         return answer.strip(), True
@@ -71,19 +68,18 @@ def call_llm(
 
 
 def _fallback_message(error: Exception) -> str:
-    """Gera mensagem de fallback baseada no tipo de erro."""
     error_str = str(error).lower()
 
     if "quota" in error_str or "insufficient" in error_str or "429" in error_str:
         return (
-            "Limite de cota da OpenAI atingido. "
+            "Limite de cota do provedor de IA atingido. "
             "A previsao de preco do modelo de ML permanece valida. "
-            "Adicione creditos em platform.openai.com para habilitar as explicacoes em linguagem natural."
+            "Adicione creditos no provedor configurado para habilitar as explicacoes em linguagem natural."
         )
     if "api_key" in error_str or "authentication" in error_str or "401" in error_str:
         return (
-            "Chave da OpenAI invalida ou nao configurada. "
-            "Configure OPENAI_API_KEY no arquivo .env para habilitar o chat."
+            "Chave do provedor de IA invalida ou nao configurada. "
+            "Configure OPENAI_API_KEY ou GROQ_API_KEY no arquivo .env para habilitar o chat."
         )
     if "timeout" in error_str:
         return (

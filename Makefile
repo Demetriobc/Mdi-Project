@@ -44,6 +44,9 @@ format:  ## Formata o código com ruff
 docker-build:  ## Constrói a imagem Docker
 	docker-compose build
 
+docker-build-api:  ## Imagem só da API (treino + RAG dentro do build; demora vários minutos)
+	docker build -t house-price-copilot-api .
+
 docker-up:  ## Sobe os containers em background
 	docker-compose up -d
 

@@ -1,13 +1,4 @@
-"""
-Módulo de inferência reutilizável.
-
-Esta é a interface pública do pipeline de ML para o restante do sistema.
-A API, o Streamlit e os serviços de explicação devem chamar apenas
-`predict_price()` — nunca acessar o modelo diretamente.
-
-Retorna um `PredictionResult` que carrega o preço previsto e metadados
-relevantes para alimentar a camada de explicação.
-"""
+"""Inferência: joblib em cache no processo; API/Streamlit chamam predict_house_price."""
 
 from __future__ import annotations
 
@@ -19,33 +10,33 @@ import numpy as np
 import pandas as pd
 
 from app.core.logger import get_logger
-from app.ml.model_registry import artifacts_exist, load_metadata, load_model, load_preprocessor
+from app.ml.model_registry import (
+    artifacts_exist,
+    load_metadata,
+    load_model,
+    load_preprocessor,
+    load_quantile_models,
+)
 
 logger = get_logger(__name__)
 
 
 @dataclass
 class PredictionResult:
-    """Resultado completo de uma predição de preço."""
-
     predicted_price: float
     predicted_price_formatted: str
-
-    # Contexto da predição
     zipcode: str
     sqft_living: int
     bedrooms: int
     bathrooms: float
     grade: int
     condition: int
-
-    # Informações do modelo
     model_version: str
     top_features: dict[str, float] = field(default_factory=dict)
-
-    # Resumo de mercado (preenchido pelo serviço de contexto, não aqui)
     zipcode_median_price: float | None = None
     price_vs_median_pct: float | None = None
+    price_p10: float | None = None
+    price_p90: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -61,128 +52,111 @@ class PredictionResult:
             "top_features": self.top_features,
             "zipcode_median_price": self.zipcode_median_price,
             "price_vs_median_pct": self.price_vs_median_pct,
+            "price_p10": self.price_p10,
+            "price_p90": self.price_p90,
         }
 
 
-# ── Cache dos artefatos (carregados uma vez, reutilizados) ────────────────────
+@lru_cache(maxsize=1)
+def _cached_model_and_metadata() -> tuple[Any, Any, dict]:
+    logger.info("Carregando modelo + metadados (1x por processo).")
+    return load_model(), load_preprocessor(), load_metadata()
+
 
 @lru_cache(maxsize=1)
-def _load_artifacts() -> tuple[Any, Any, dict]:
-    """
-    Carrega e cacheia os artefatos de modelo.
-
-    lru_cache garante que o carregamento ocorre apenas uma vez por
-    processo — evita re-leitura de disco a cada chamada de inferência.
-    """
-    logger.info("Carregando artefatos de modelo (primeira chamada)...")
-    model = load_model()
-    preprocessor = load_preprocessor()
-    metadata = load_metadata()
-    logger.info("Artefatos carregados e cacheados.")
-    return model, preprocessor, metadata
+def _cached_quantile_pipelines() -> tuple[Any | None, Any | None]:
+    return load_quantile_models()
 
 
 def get_model_metadata() -> dict:
-    """Retorna os metadados do modelo carregado."""
-    _, _, metadata = _load_artifacts()
-    return metadata
+    return _cached_model_and_metadata()[2]
 
 
-# ── Inferência ────────────────────────────────────────────────────────────────
+def _first_n_importance_keys(metadata: dict, n: int = 5) -> dict[str, float]:
+    imp = metadata.get("shap_importance") or metadata.get("feature_importance") or {}
+    items = list(imp.items())[:n]
+    return dict(items)
 
-def predict_price(input_data: dict[str, Any]) -> PredictionResult:
-    """
-    Realiza a predição de preço para um imóvel.
 
-    Args:
-        input_data: dicionário com as features do imóvel.
-                    Deve conter as colunas originais do dataset KC.
-                    Campos ausentes são tolerados (imputados pelo preprocessor).
-
-    Returns:
-        PredictionResult com preço previsto e metadados.
-
-    Raises:
-        FileNotFoundError: se os artefatos não foram gerados (make train).
-        ValueError: se campos críticos estiverem ausentes.
-    """
+def predict_house_price(property_row: dict[str, Any]) -> PredictionResult:
     if not artifacts_exist():
-        raise FileNotFoundError(
-            "Artefatos de modelo não encontrados. Execute `make train` primeiro."
-        )
+        raise FileNotFoundError("Sem artefatos em artifacts/model/. Rode o treino antes.")
 
-    model, preprocessor, metadata = _load_artifacts()
+    model, _, metadata = _cached_model_and_metadata()
+    q10, q90 = _cached_quantile_pipelines()
+    df = pd.DataFrame([property_row])
 
-    # O modelo KC não usa a coluna `date` na inferência — usa sale_month=1 como fallback
-    # (ver HousePriceFeatureEngineer.transform)
-    df = pd.DataFrame([input_data])
+    y_log = model.predict(df)
+    price = float(np.expm1(y_log[0]))
 
-    # O pipeline salvo é o preprocessor (feature_eng + column_transformer)
-    # O modelo salvo é o XGBRegressor completo via full_pipeline
-    # Usamos o full_pipeline diretamente para predição
-    y_log_pred = model.predict(df)
-    predicted_price = float(np.expm1(y_log_pred[0]))
-
-    # Top features do modelo para este imóvel
-    top_features = _get_top_features_for_result(metadata)
+    p10 = p90 = None
+    if q10 is not None and q90 is not None:
+        p10 = round(float(np.expm1(q10.predict(df)[0])), 2)
+        p90 = round(float(np.expm1(q90.predict(df)[0])), 2)
+        if p10 > p90:
+            p10, p90 = p90, p10
 
     return PredictionResult(
-        predicted_price=round(predicted_price, 2),
-        predicted_price_formatted=f"US$ {predicted_price:,.0f}",
-        zipcode=str(input_data.get("zipcode", "N/A")),
-        sqft_living=int(input_data.get("sqft_living", 0)),
-        bedrooms=int(input_data.get("bedrooms", 0)),
-        bathrooms=float(input_data.get("bathrooms", 0)),
-        grade=int(input_data.get("grade", 7)),
-        condition=int(input_data.get("condition", 3)),
-        model_version=metadata.get("trained_at", "unknown")[:10],
-        top_features=top_features,
+        predicted_price=round(price, 2),
+        predicted_price_formatted=f"US$ {price:,.0f}",
+        zipcode=str(property_row.get("zipcode", "N/A")),
+        sqft_living=int(property_row.get("sqft_living", 0)),
+        bedrooms=int(property_row.get("bedrooms", 0)),
+        bathrooms=float(property_row.get("bathrooms", 0)),
+        grade=int(property_row.get("grade", 7)),
+        condition=int(property_row.get("condition", 3)),
+        model_version=str(metadata.get("trained_at", "unknown"))[:10],
+        top_features=_first_n_importance_keys(metadata),
+        price_p10=p10,
+        price_p90=p90,
     )
 
 
-def predict_batch(records: list[dict[str, Any]]) -> list[PredictionResult]:
-    """
-    Predição em lote para múltiplos imóveis.
-
-    Mais eficiente que chamar `predict_price` em loop para grandes volumes.
-    """
+def predict_house_price_batch(records: list[dict[str, Any]]) -> list[PredictionResult]:
     if not artifacts_exist():
-        raise FileNotFoundError(
-            "Artefatos de modelo não encontrados. Execute `make train` primeiro."
-        )
+        raise FileNotFoundError("Sem artefatos em artifacts/model/. Rode o treino antes.")
 
-    model, _, metadata = _load_artifacts()
+    model, _, metadata = _cached_model_and_metadata()
+    q10, q90 = _cached_quantile_pipelines()
     df = pd.DataFrame(records)
 
-    y_log_pred = model.predict(df)
-    prices = np.expm1(y_log_pred)
+    prices = np.expm1(model.predict(df))
+    p10_arr = np.expm1(q10.predict(df)) if q10 is not None else None
+    p90_arr = np.expm1(q90.predict(df)) if q90 is not None else None
+    top = _first_n_importance_keys(metadata)
 
-    top_features = _get_top_features_for_result(metadata)
-
-    return [
-        PredictionResult(
-            predicted_price=round(float(price), 2),
-            predicted_price_formatted=f"US$ {price:,.0f}",
-            zipcode=str(record.get("zipcode", "N/A")),
-            sqft_living=int(record.get("sqft_living", 0)),
-            bedrooms=int(record.get("bedrooms", 0)),
-            bathrooms=float(record.get("bathrooms", 0)),
-            grade=int(record.get("grade", 7)),
-            condition=int(record.get("condition", 3)),
-            model_version=metadata.get("trained_at", "unknown")[:10],
-            top_features=top_features,
+    out: list[PredictionResult] = []
+    for i, rec in enumerate(records):
+        p10 = p90 = None
+        if p10_arr is not None and p90_arr is not None:
+            p10 = round(float(p10_arr[i]), 2)
+            p90 = round(float(p90_arr[i]), 2)
+            if p10 > p90:
+                p10, p90 = p90, p10
+        pr = float(prices[i])
+        out.append(
+            PredictionResult(
+                predicted_price=round(pr, 2),
+                predicted_price_formatted=f"US$ {pr:,.0f}",
+                zipcode=str(rec.get("zipcode", "N/A")),
+                sqft_living=int(rec.get("sqft_living", 0)),
+                bedrooms=int(rec.get("bedrooms", 0)),
+                bathrooms=float(rec.get("bathrooms", 0)),
+                grade=int(rec.get("grade", 7)),
+                condition=int(rec.get("condition", 3)),
+                model_version=str(metadata.get("trained_at", "unknown"))[:10],
+                top_features=top,
+                price_p10=p10,
+                price_p90=p90,
+            )
         )
-        for record, price in zip(records, prices)
-    ]
+    return out
 
 
-# ── Auxiliares ────────────────────────────────────────────────────────────────
+# Nomes legados usados em vários módulos
+def predict_price(input_data: dict[str, Any]) -> PredictionResult:
+    return predict_house_price(input_data)
 
-def _get_top_features_for_result(
-    metadata: dict,
-    top_n: int = 5,
-) -> dict[str, float]:
-    """Retorna as top N features por importância dos metadados do modelo."""
-    importance = metadata.get("shap_importance") or metadata.get("feature_importance", {})
-    items = list(importance.items())[:top_n]
-    return dict(items)
+
+def predict_batch(records: list[dict[str, Any]]) -> list[PredictionResult]:
+    return predict_house_price_batch(records)

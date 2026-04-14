@@ -1,4 +1,4 @@
-# House Price Copilot
+# madeinweb-teste
 
 > Solução end-to-end para previsão de preços de imóveis com Machine Learning + GenAI.
 
@@ -6,7 +6,7 @@
 
 ## Visão geral
 
-O **House Price Copilot** é um produto de dados que combina um modelo preditivo tabular com uma camada de inteligência generativa para oferecer não apenas uma estimativa de preço, mas uma **explicação contextualizada em linguagem natural**.
+O **madeinweb-teste** é um produto de dados que combina um modelo preditivo tabular com uma camada de inteligência generativa para oferecer não apenas uma estimativa de preço, mas uma **explicação contextualizada em linguagem natural**.
 
 O projeto foi construído como um case técnico para demonstrar capacidade em:
 - Engenharia de features e modelagem preditiva com dados tabulares
@@ -60,7 +60,7 @@ Usuário → UI (Streamlit)
 ## Estrutura do projeto
 
 ```
-house-price-copilot/
+madeinweb-teste/
 ├── app/
 │   ├── api/            # FastAPI — rotas, schemas, serviços
 │   ├── ml/             # Pipeline de ML: treino, inferência, avaliação
@@ -91,14 +91,14 @@ house-price-copilot/
 
 - Python 3.11+
 - Docker (opcional)
-- Chave de API da OpenAI
+- Chave de API da OpenAI ou Groq
 
 ### 2. Configurar ambiente
 
 ```bash
 # Clonar o repositório
-git clone https://github.com/seu-usuario/house-price-copilot.git
-cd house-price-copilot
+git clone https://github.com/seu-usuario/madeinweb-teste.git
+cd madeinweb-teste
 
 # Criar ambiente virtual
 python -m venv .venv
@@ -110,7 +110,7 @@ pip install -r requirements.txt
 
 # Configurar variáveis de ambiente
 cp .env.example .env
-# Editar .env com sua OPENAI_API_KEY
+# Editar .env com LLM_PROVIDER e sua chave (OPENAI_API_KEY ou GROQ_API_KEY)
 ```
 
 ### 3. Treinar o modelo
@@ -139,9 +139,24 @@ make ui
 
 ### 7. Tudo de uma vez (Docker)
 
+O `Dockerfile` é **multi-stage**: na fase de build baixa o CSV público do KC House, roda `python -m app.ml.train` e `python -m app.rag.build_kb`; a imagem final só leva código + `artifacts/` + `data/knowledge_base/`. O build pode levar **10–20 minutos** e precisa de **RAM suficiente** (treino XGBoost + FAISS).
+
 ```bash
 docker-compose up --build
+# ou só a API (mesma imagem):
+docker build -t house-price-copilot-api .
 ```
+
+Variável opcional no build (Railway **Docker Build Args** ou `docker build --build-arg`):
+
+- `KC_HOUSE_DATA_URL` — URL do CSV (padrão: cópia pública usada no curso ML do Google).
+
+### 8. Railway
+
+1. Conecte o repositório e deixe o builder usar o `Dockerfile`.
+2. Aumente **Build timeout / resources** se o build falhar por tempo ou memória.
+3. Defina `APP_ENV=staging`, chaves de LLM e (opcional) Postgres + `DATABASE_URL`.
+4. Não monte volume em `artifacts/` — os ficheiros vêm da imagem.
 
 ---
 

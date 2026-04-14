@@ -1,15 +1,4 @@
-"""
-Serviço de explicação.
-
-Orquestra o fluxo completo:
-  Predição → RAG → Prompt → LLM → Explicação
-
-É chamado pelo endpoint /chat quando o usuário pede explicação da previsão
-e também internamente para gerar a explicação automática inicial.
-
-Hierarquia respeitada:
-  ML prevê → RAG contextualiza → LLM explica
-"""
+"""Monta prompt (predição + RAG + regras) e chama llm_service."""
 
 from __future__ import annotations
 
@@ -19,6 +8,21 @@ from app.core.logger import get_logger
 from app.rag.prompt_builder import SYSTEM_PROMPT
 
 logger = get_logger(__name__)
+
+# Instrução extra só no chat: o modelo tende a “ensaiar” se o system for genérico.
+_CHAT_FORMAT_SUFFIX = """
+=== FORMATO DA RESPOSTA (OBRIGATORIO) ===
+- Responda diretamente à última mensagem do usuário.
+- Máximo: 2 parágrafos curtos OU até 6 linhas; sem listas longas nem introduções.
+- Foque neste imóvel (zipcode e features da sessão). Evite parágrafos genéricos
+  sobre toda King County, Bellevue, lago Washington etc., salvo se a pergunta
+  pedir comparação ampla.
+- Não repita o valor do preço previsto em extenso, salvo se for essencial.
+"""
+
+# Limita tamanho na API (além do prompt): explicação inicial um pouco maior que o chat.
+_LLM_MAX_TOKENS_INITIAL = 450
+_LLM_MAX_TOKENS_CHAT = 380
 
 
 def _format_prediction_block(ctx: PredictionContext) -> str:
@@ -69,12 +73,10 @@ def generate_initial_explanation(context: PredictionContext) -> ChatResponse:
     )
 
     task = (
-        "Com base nas informacoes acima, escreva uma explicacao clara e objetiva "
-        "sobre o preco previsto para este imovel. Inclua:\n"
-        "1. Os principais fatores que justificam o preco (grade, localizacao, area, condicao)\n"
-        "2. Como este imovel se posiciona em relacao ao mercado do zipcode\n"
-        "3. Um breve comentario sobre o nivel de confianca desta previsao\n\n"
-        "Use linguagem acessivel, seja direto e limite a resposta a 3 paragrafos."
+        "Em no maximo 2 paragrafos curtos (~120 palavras), explique o preco previsto "
+        "para ESTE imovel: (1) 2-3 fatores principais (priorize SHAP/top features), "
+        "(2) uma frase sobre posicao vs. mediana do zipcode se houver dado, "
+        "(3) uma frase sobre limitacao/confianca. Sem ensaio sobre regioes genericas."
     )
 
     messages = [
@@ -82,7 +84,9 @@ def generate_initial_explanation(context: PredictionContext) -> ChatResponse:
         {"role": "user", "content": task},
     ]
 
-    answer, llm_ok = llm_service.call_llm(messages)
+    answer, llm_ok = llm_service.call_llm(
+        messages, max_tokens=_LLM_MAX_TOKENS_INITIAL
+    )
 
     return ChatResponse(answer=answer, sources=sources, llm_available=llm_ok)
 
@@ -113,7 +117,8 @@ def answer_chat_question(request: ChatRequest) -> ChatResponse:
     )
 
     system_content = (
-        f"{SYSTEM_PROMPT}\n\n"
+        f"{SYSTEM_PROMPT}\n"
+        f"{_CHAT_FORMAT_SUFFIX}\n\n"
         f"{prediction_block}\n\n"
         f"{rag_ctx}"
     )
@@ -129,6 +134,8 @@ def answer_chat_question(request: ChatRequest) -> ChatResponse:
 
     messages.append({"role": "user", "content": request.message})
 
-    answer, llm_ok = llm_service.call_llm(messages)
+    answer, llm_ok = llm_service.call_llm(
+        messages, max_tokens=_LLM_MAX_TOKENS_CHAT
+    )
 
     return ChatResponse(answer=answer, sources=sources, llm_available=llm_ok)
