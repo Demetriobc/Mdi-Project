@@ -149,7 +149,7 @@ docker build -t house-price-copilot-api .
 
 Variável opcional no build (Railway **Docker Build Args** ou `docker build --build-arg`):
 
-- `KC_HOUSE_DATA_URL` — URL do CSV (padrão: cópia pública usada no curso ML do Google).
+- `KC_HOUSE_DATA_URL` — força uma URL; se vazio, o script tenta mirrors (GitHub raw). O bucket `storage.googleapis.com/mledu-datasets` costuma devolver **403** em CI/build.
 
 ### 8. Railway
 

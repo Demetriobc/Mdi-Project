@@ -17,7 +17,8 @@ COPY app ./app
 COPY data ./data
 COPY scripts ./scripts
 
-ARG KC_HOUSE_DATA_URL=https://storage.googleapis.com/mledu-datasets/kc_house_data.csv
+# Google mledu-datasets costuma 403 no build; override com --build-arg se precisares.
+ARG KC_HOUSE_DATA_URL=
 ENV KC_HOUSE_DATA_URL=${KC_HOUSE_DATA_URL}
 ENV PYTHONUNBUFFERED=1
 
