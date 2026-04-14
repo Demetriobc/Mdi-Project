@@ -1,8 +1,15 @@
 import axios from 'axios'
 import type { HouseInput, PredictionResponse, ChatRequest, ChatResponse } from '@/types/prediction'
 
+/**
+ * Produção (Railway, etc.): defina VITE_API_BASE_URL=https://sua-api.up.railway.app
+ * Dev: omita — o Vite proxy usa baseURL /api → localhost:8001
+ */
+const apiRoot = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ?? ''
+const baseURL = apiRoot.length > 0 ? apiRoot : '/api'
+
 const http = axios.create({
-  baseURL: '/api',
+  baseURL,
   timeout: 60_000,
 })
 

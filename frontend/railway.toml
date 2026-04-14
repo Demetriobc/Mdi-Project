@@ -1,0 +1,9 @@
+# Serviço separado na Railway: Root Directory = frontend
+# Variável de build (marcar "Available at Build Time"): VITE_API_BASE_URL = URL da tua API
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 30

@@ -1,73 +1,41 @@
-# React + TypeScript + Vite
+# Interface React (Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Consome a API FastAPI (`/predict`, `/chat`, `/health`). Em **dev**, o proxy do Vite manda `/api` para `localhost:8001`. Em **produção**, a URL da API vem de `VITE_API_BASE_URL` (incorporada no build).
 
-Currently, two official plugins are available:
+## Desenvolvimento local
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm ci
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Garante a API em `http://localhost:8001` (ou ajusta `vite.config.ts`).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Deploy na Railway (segundo serviço)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. No mesmo projeto Railway onde está a API: **New** → **GitHub Repo** (o mesmo repositório) ou **Empty service** → liga ao repo.
+2. **Settings** do novo serviço:
+   - **Root Directory:** `frontend`
+   - **Dockerfile path:** `Dockerfile` (default se estiver em `frontend/`)
+3. **Variables** (marca **Available at Build Time** nas que forem `VITE_*`):
+   - `VITE_API_BASE_URL` = `https://mdi-project-production.up.railway.app` (substitui pelo domínio real da tua API)
+   - Opcional: `VITE_USD_BRL_RATE` = `5.5`
+4. **Generate Domain** no serviço do front — é o link para partilhar com recrutadores.
+5. Na **API** (serviço antigo), adiciona o domínio do React a `CORS_ORIGINS` se usares `APP_ENV=production`, por exemplo:
+   - `CORS_ORIGINS=https://teu-frontend-production.up.railway.app`
+   - Em `staging` / `development` a API já aceita `*` e não precisas disto.
+
+Build local da imagem (a partir da raiz do repo):
+
+```bash
+docker build -f frontend/Dockerfile ./frontend -t house-ui \
+  --build-arg VITE_API_BASE_URL=https://SUA-API.up.railway.app
 ```
+
+## Scripts
+
+| Comando | Descrição |
+|---------|-----------|
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Typecheck + bundle para `dist/` |
+| `npm run preview` | Pré-visualizar o `dist/` |

@@ -70,8 +70,11 @@ class Settings(BaseSettings):
     # ── Banco de dados ────────────────────────────────────────────────────────
     database_url: str = Field(default="")
 
-    # ── UI ────────────────────────────────────────────────────────────────────
+    # ── UI / CORS ───────────────────────────────────────────────────────────────
     api_base_url: str = Field(default="http://localhost:8001")
+    # Produção: origens do browser que podem chamar a API (separadas por vírgula).
+    # Ex.: https://meu-app.vercel.app,http://localhost:5173
+    cors_origins: str = Field(default="")
 
     # ── Computed properties ───────────────────────────────────────────────────
 

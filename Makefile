@@ -47,6 +47,10 @@ docker-build:  ## Constrói a imagem Docker
 docker-build-api:  ## Imagem só da API (treino + RAG dentro do build; demora vários minutos)
 	docker build -t house-price-copilot-api .
 
+docker-build-frontend:  ## Imagem do React (passa a URL da API)
+	docker build -f frontend/Dockerfile ./frontend -t house-price-copilot-ui \
+		--build-arg VITE_API_BASE_URL=$(VITE_API_BASE_URL)
+
 docker-up:  ## Sobe os containers em background
 	docker-compose up -d
 

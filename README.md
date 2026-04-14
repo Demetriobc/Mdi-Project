@@ -151,12 +151,13 @@ Variável opcional no build (Railway **Docker Build Args** ou `docker build --bu
 
 - `KC_HOUSE_DATA_URL` — força uma URL; se vazio, o script tenta mirrors (GitHub raw). O bucket `storage.googleapis.com/mledu-datasets` costuma devolver **403** em CI/build.
 
-### 8. Railway
+### 8. Railway (API + React)
 
-1. Conecte o repositório e deixe o builder usar o `Dockerfile`.
-2. Aumente **Build timeout / resources** se o build falhar por tempo ou memória.
-3. Defina `APP_ENV=staging`, chaves de LLM e (opcional) Postgres + `DATABASE_URL`.
-4. Não monte volume em `artifacts/` — os ficheiros vêm da imagem.
+**API (raiz do repo):** `Dockerfile` na raiz — treino + RAG no build. Variáveis: `DATABASE_URL` (referência ao Postgres), `APP_ENV`, chaves LLM, etc.
+
+**React (`frontend/`):** segundo serviço na Railway com **Root Directory** = `frontend` e o `frontend/Dockerfile`. Variável de build **`VITE_API_BASE_URL`** = URL pública da API (marcar *Available at Build Time*). Passos detalhados em `frontend/README.md`.
+
+Depois do front ter domínio próprio, em `APP_ENV=production` na API define **`CORS_ORIGINS`** com esse URL.
 
 ---
 

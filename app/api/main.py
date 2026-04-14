@@ -23,6 +23,17 @@ configure_root_logger()
 logger = get_logger(__name__)
 
 
+def _cors_allow_origins() -> list[str]:
+    if not settings.is_production:
+        return ["*"]
+    raw = (settings.cors_origins or "").strip()
+    if raw:
+        return [o.strip() for o in raw.split(",") if o.strip()]
+    if settings.api_base_url and not settings.api_base_url.startswith("http://localhost"):
+        return [settings.api_base_url.rstrip("/")]
+    return ["*"]
+
+
 # ── Lifespan (startup / shutdown) ─────────────────────────────────────────────
 
 @asynccontextmanager
@@ -86,10 +97,12 @@ app = FastAPI(
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 
+_origins = _cors_allow_origins()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if not settings.is_production else [settings.api_base_url],
-    allow_credentials=True,
+    allow_origins=_origins,
+    # Com allow_origins=["*"] o Starlette exige allow_credentials=False
+    allow_credentials=False if _origins == ["*"] else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
