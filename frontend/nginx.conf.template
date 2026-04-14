@@ -1,16 +1,18 @@
-# __PORT__ substituído no entrypoint (Railway injeta PORT)
 server {
-    listen       __PORT__;
+    listen       ${PORT};
     server_name  localhost;
+
     root   /usr/share/nginx/html;
     index  index.html;
 
+    # SPA fallback: qualquer rota desconhecida serve o index.html
     location / {
         try_files $uri $uri/ /index.html;
     }
 
+    # Cache longo para assets com hash no nome
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?)$ {
         expires 7d;
-        add_header Cache-Control "public";
+        add_header Cache-Control "public, immutable";
     }
 }
