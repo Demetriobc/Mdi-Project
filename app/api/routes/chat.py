@@ -54,3 +54,4 @@ async def explain(context: PredictionContext) -> ChatResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Erro ao gerar explicacao.",
         ) from e
+

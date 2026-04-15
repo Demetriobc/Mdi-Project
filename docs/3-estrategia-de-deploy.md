@@ -4,27 +4,36 @@
 
 ## 1. Visão Geral
 
-A solução em produção é composta por dois serviços independentes hospedados no Railway, conectados por uma API REST:
+Este documento está dividido em duas partes:
 
-> **Diagrama interativo:** [`docs/diagrams/01-system-architecture.excalidraw`](diagrams/01-system-architecture.excalidraw)  
-> Abra no VS Code com a extensão **Excalidraw** ou em [excalidraw.com](https://excalidraw.com) → Abrir arquivo.
+**Parte A — Deploy atual (Railway):** a solução em produção, construída para demonstrar que o sistema funciona end-to-end em ambiente real com CI/CD básico e zero custo operacional.
 
-![Arquitetura do sistema](diagrams/01-system-architecture.excalidraw)
+**Parte B — Deploy profissional em empresa:** a arquitetura que seria adotada num contexto de produto real com SLA, time de ML, múltiplos modelos em paralelo e necessidade de rollback controlado.
 
-Os dois serviços são deployados e escalados de forma independente. O frontend é um build estático servido por Nginx — não tem lógica de servidor além de roteamento. Toda a computação ocorre na API.
+A distinção é intencional: o Railway resolve o problema de ter algo funcionando em produção agora; a arquitetura enterprise resolve os problemas que aparecem quando o sistema precisa ser mantido, monitorado e evoluído por um time.
 
 ---
 
-## 2. Componentes
+# Parte A — Deploy Atual (Railway)
 
-### 2.1 Frontend (React + Vite + Nginx)
+## A.1 Arquitetura do Sistema em Produção
 
-**Responsabilidade:** interface do usuário  
-**stack:** React , TypeScript, Tailwind , shadcn 
-**Diretório:** `frontend/`  
-**Configuração Railway:** Root Directory = `frontend`, usa `frontend/Dockerfile`
+A solução em produção é composta por dois serviços independentes hospedados no Railway, conectados por uma API REST:
 
-O frontend é compilado em tempo de build com `npm run build`, gerando um bundle estático em `dist/`. O Nginx serve esses arquivos e faz proxy de roteamento para o `index.html` (SPA).
+![Arquitetura do sistema](diagrams/01-system-architecture.svg)
+
+> Fonte editável: [`diagrams/01-system-architecture.excalidraw`](diagrams/01-system-architecture.excalidraw)
+
+Os dois serviços são deployados e escalados de forma independente. O frontend é um build estático servido por Nginx — não tem lógica de servidor além de roteamento SPA. Toda a computação ocorre na API.
+
+## A.2 Componentes
+
+### Frontend (React + Vite + Nginx)
+
+**Stack:** React, TypeScript, Tailwind, shadcn/ui  
+**Diretório:** `frontend/`
+
+O frontend é compilado em tempo de build com `npm run build`, gerando um bundle estático em `dist/`. O Nginx serve os arquivos e faz fallback para `index.html` (SPA routing).
 
 A URL da API é injetada em tempo de build via variável de ambiente:
 
@@ -32,102 +41,62 @@ A URL da API é injetada em tempo de build via variável de ambiente:
 VITE_API_BASE_URL=https://sua-api.up.railway.app
 ```
 
-Esta variável **precisa estar marcada como "Available at Build Time"** no painel do Railway — diferente de variáveis de runtime, o Vite a incorpora diretamente no bundle JavaScript.
+Esta variável precisa estar marcada como "Available at Build Time" no Railway — diferente de variáveis de runtime, o Vite a incorpora diretamente no bundle JavaScript.
 
-### 2.2 API (FastAPI + Uvicorn)
+### API (FastAPI + Uvicorn)
 
-**Responsabilidade:** inferência ML, RAG, chat  
-**Tecnologia:** Python 3.11, FastAPI, Uvicorn  
-**Diretório:** raiz do repositório  
-**Configuração Railway:** usa `Dockerfile` na raiz
-
-A API expõe três endpoints principais:
+**Stack:** Python 3.11, FastAPI, Uvicorn  
+**Diretório:** raiz do repositório
 
 | Rota | Método | Descrição |
 |---|---|---|
-| `/health` | GET | Status do serviço, disponibilidade de artefatos e banco |
-| `/predict` | POST | Recebe características do imóvel, retorna previsão + intervalo |
-| `/chat` | POST | Recebe pergunta + contexto do imóvel, retorna resposta do LLM |
+| `/health` | GET | Status: modelo, vectorstore, LLM, banco |
+| `/predict` | POST | Características do imóvel → previsão + intervalo P10–P90 |
+| `/chat` | POST | Pergunta + contexto do imóvel → resposta do LLM via RAG |
 
-O startup da API verifica automaticamente:
-- Presença do modelo e preprocessador em `artifacts/model/`
-- Presença do índice FAISS em `artifacts/vectorstore/`
-- Conectividade com o banco de dados
-- Configuração de chave LLM
+O startup verifica automaticamente todos os componentes. Serviços ausentes (banco offline, chave LLM ausente) não travam o startup — a API sobe em modo degradado e reporta o estado via `/health`.
 
-Serviços não disponíveis (modelo ausente, banco offline, sem chave LLM) não travam o startup — a API sobe em modo degradado e reporta o estado via `/health`.
+### Modelo ML (XGBoost + preprocessador)
 
-### 2.3 Modelo de ML (XGBoost + preprocessador)
+O modelo está embutido na imagem Docker como arquivos `.joblib`:
 
-O modelo não é carregado via API externa — está embutido na imagem Docker como arquivos `.joblib`:
+- `artifacts/model/house_price_model.joblib` — pipeline completo (p50)
+- `artifacts/model/preprocessor.joblib` — pipeline de pré-processamento isolado
+- `artifacts/model/metadata.json` — métricas, hiperparâmetros, importâncias, medianas por zipcode
+- `artifacts/model/model_p10.joblib` / `model_p90.joblib` — modelos quantílicos
 
-- `artifacts/model/house_price_model.joblib` — pipeline completo (feature eng + preprocessador + XGBoost p50)
-- `artifacts/model/preprocessor.joblib` — pipeline de pré-processamento isolado (usado para extrair matrix para SHAP)
-- `artifacts/model/metadata.json` — metadados do treino (métricas, hiperparâmetros, importâncias, medianas por zipcode)
+Carregados uma vez no startup e mantidos em memória. Latência de inferência: < 100ms por requisição.
 
-O carregamento é feito uma vez no startup e mantido em memória. A latência de inferência é < 100ms por requisição em condições normais.
+### Camada RAG
 
-### 2.4 Camada RAG
-
-**Componentes:**
 - `artifacts/vectorstore/index.faiss` — índice FAISS com embeddings da knowledge base
-- `data/knowledge_base/` — documentos fonte (5 arquivos markdown + CSV)
+- `data/knowledge_base/` — documentos fonte (markdown + CSV)
 
-O retriever busca os 4 trechos mais relevantes para cada pergunta e os injeta no prompt do LLM. Os embeddings são gerados localmente com `fastembed` (gratuito) ou via API da OpenAI, conforme configuração.
+O retriever busca os 4 trechos mais relevantes por pergunta e os injeta no prompt do LLM. Embeddings locais via `fastembed` (sem custo) ou OpenAI, conforme configuração.
 
-### 2.5 Banco de Dados (PostgreSQL)
+### Banco de Dados (PostgreSQL managed)
 
-**Uso:** persistência de logs de predição para análise posterior  
-**Status:** opcional — a API funciona sem banco configurado
+Opcional — a API funciona sem banco. Quando disponível, registra cada predição com timestamp, features de entrada, previsão e intervalo para análise de drift e uso.
 
-Quando disponível, cada chamada ao `/predict` é registrada com timestamp, features de entrada, previsão e intervalo. Esses logs são a base para monitoramento de drift e análise de uso em produção.
+## A.3 Docker e CI/CD no Railway
 
----
+**Multi-stage build (API):**
 
-## 3. Fluxo de Inferência
+```
+Stage 1 — builder:
+  instala dependências Python
+  baixa dataset KC House (com fallback)
+  executa python -m app.ml.train       (≈ 10–15 min)
+  executa python -m app.rag.build_kb   (indexação FAISS)
 
-**Fluxo `/predict`** — diagrama interativo:
+Stage 2 — final:
+  copia código + artefatos gerados (sem dados brutos)
+  resultado: imagem enxuta pronta para deploy
+```
 
-> [`docs/diagrams/02-inference-flow.excalidraw`](diagrams/02-inference-flow.excalidraw)
+O treino dentro do Docker garante que o modelo em produção foi treinado no mesmo ambiente em que será executado — sem divergências de versão de biblioteca.
 
-![Fluxo de inferência](diagrams/02-inference-flow.excalidraw)
-
-**Fluxo `/chat`:**
-
-1. Usuário digita pergunta no chat
-2. Frontend envia: pergunta + dados do imóvel + previsão atual
-3. `POST /chat` → API
-4. RAG retriever gera embedding da pergunta
-5. Busca vetorial no FAISS → top-4 trechos relevantes
-6. Prompt montado: contexto recuperado + dados do imóvel + previsão + pergunta
-7. LLM (OpenAI GPT-4o-mini ou Groq Llama 3.1) gera resposta
-8. API retorna resposta em texto
-9. React exibe no painel de chat
-
----
-
-## 4. Infraestrutura
-
-### 4.1 Docker
-
-**API (multi-stage build):**
-
-O `Dockerfile` na raiz usa dois estágios:
-
-1. **Stage builder:** instala dependências Python, baixa o dataset KC House (via script com fallback para mirrors), executa `python -m app.ml.train` (treino XGBoost) e `python -m app.rag.build_kb` (indexação FAISS)
-2. **Stage final:** copia apenas código + artefatos gerados (sem dados brutos), resultado em imagem mais enxuta
-
-O treino dentro do Docker garante que o modelo em produção foi treinado no mesmo ambiente que será executado — sem divergências de biblioteca ou versão.
-
-**Build time:** 10–20 minutos na primeira execução (treino XGBoost + indexação FAISS). Railway tem timeout configurado para acomodar isso.
-
-**Frontend:**
-
-`frontend/Dockerfile` usa Node.js para build e Nginx para serving. O `nginx.conf` configura roteamento para SPA e proxy de cache para assets estáticos.
-
-### 4.2 Railway
-
-**Configuração do serviço API (`railway.toml` na raiz):**
+**railway.toml (API):**
 
 ```toml
 [build]
@@ -141,108 +110,350 @@ restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
 ```
 
-O `healthcheckPath = "/health"` garante que o Railway só considera o serviço saudável após o startup completar com sucesso. O timeout de 120s acomoda o carregamento dos artefatos na memória.
+O `healthcheckTimeout = 120s` acomoda o carregamento dos artefatos na memória durante o startup.
 
-**Configuração do serviço Frontend:**
+## A.4 Variáveis de Ambiente
 
-- Root Directory: `frontend`
-- Dockerfile: `frontend/Dockerfile`
-- Build Arg: `VITE_API_BASE_URL` = URL pública da API (marcar como "Available at Build Time")
-
-### 4.3 Variáveis de Ambiente
-
-**API (runtime):**
-
-| Variável | Descrição | Obrigatória |
+| Variável | Tipo | Obrigatória |
 |---|---|---|
-| `APP_ENV` | `production` ou `development` | Sim |
-| `LLM_PROVIDER` | `openai` ou `groq` | Sim |
-| `OPENAI_API_KEY` | Chave OpenAI | Se provider = openai |
-| `GROQ_API_KEY` | Chave Groq | Se provider = groq |
-| `DATABASE_URL` | Connection string PostgreSQL | Não (logs desativados se ausente) |
-| `CORS_ORIGINS` | URLs do frontend separadas por vírgula | Recomendado em produção |
-
-**Frontend (build time):**
-
-| Variável | Descrição |
-|---|---|
-| `VITE_API_BASE_URL` | URL pública da API (Railway domain) |
+| `APP_ENV` | Runtime | Sim |
+| `LLM_PROVIDER` | Runtime | Sim (`openai` ou `groq`) |
+| `OPENAI_API_KEY` / `GROQ_API_KEY` | Runtime | Sim (conforme provider) |
+| `DATABASE_URL` | Runtime | Não |
+| `CORS_ORIGINS` | Runtime | Recomendado em produção |
+| `VITE_API_BASE_URL` | Build time (frontend) | Sim |
 
 ---
 
-## 5. Observabilidade
+# Parte B — Deploy Profissional em Empresa
 
-### 5.1 Health check
+O Railway resolve bem os problemas de escala inicial e demo. A partir do momento em que o sistema entra em produção real — com SLA, múltiplos usuários, time de ML e necessidade de evoluir o modelo sem downtime — a arquitetura precisa ser repensada em cinco pilares:
 
-`GET /health` retorna estado de cada componente:
+1. **Infraestrutura e orquestração**
+2. **CI/CD com múltiplos ambientes**
+3. **Ciclo de vida do modelo (MLOps)**
+4. **Observabilidade**
+5. **Segurança e governança**
+
+---
+
+## B.1 Infraestrutura e Orquestração
+
+### Comparação de opções
+
+| Plataforma | Quando usar | Trade-off |
+|---|---|---|
+| **AWS ECS + Fargate** | Time pequeno, sem expertise em Kubernetes, escala automática sem gerenciar nodes | Menos controle, mais caro em alta escala |
+| **Kubernetes (EKS/GKE)** | Time com experiência em K8s, múltiplos serviços, precisa de controle fino de recursos | Curva de aprendizado alta, overhead de operação |
+| **AWS Lambda + API Gateway** | Modelo leve, tráfego irregular, custo por invocação | Cold start pode ser problema; XGBoost com 3 modelos + FAISS não é ideal para Lambda |
+
+**Escolha recomendada para este projeto em escala:** AWS ECS + Fargate com Application Load Balancer. O modelo XGBoost (3 pipelines) + FAISS tem footprint de memória (~300–500MB) que não é amigável para Lambda. ECS oferece autoscaling sem gerenciar a infraestrutura de nodes.
+
+### Infraestrutura como Código (IaC)
+
+Todo o ambiente seria definido em Terraform (ou Pulumi):
+
+```
+infra/
+  modules/
+    ecs-service/      → task definition, service, autoscaling
+    rds/              → PostgreSQL managed
+    s3-artifacts/     → bucket para artefatos de modelo
+    ecr/              → registry de imagens Docker
+    alb/              → load balancer + SSL termination
+  envs/
+    staging/          → variáveis do ambiente de homologação
+    production/       → variáveis do ambiente de produção
+```
+
+Benefício: qualquer engenheiro pode reproduzir o ambiente completo com `terraform apply`. Sem configuração manual em console = sem configuração esquecida em documentação.
+
+### Separação de responsabilidades
+
+```
+Usuário (HTTPS)
+    ↓
+CloudFront / CDN          → cache de assets estáticos do frontend
+    ↓
+Application Load Balancer → SSL termination, roteamento /api/* → API
+    ↓
+ECS Service (API)         → 2–N tasks, autoscaling por CPU/memória
+    ↓
+S3 (artefatos)            → modelo, preprocessador, FAISS index
+RDS PostgreSQL            → logs de predição, feedback, drift metrics
+```
+
+O frontend seria deployado no S3 + CloudFront — sem Nginx gerenciado. A CDN serve o bundle com cache de borda e invalidação automática a cada deploy.
+
+---
+
+## B.2 CI/CD com Múltiplos Ambientes
+
+### Fluxo de branches e ambientes
+
+```
+feature/* → PR → main → staging (automático) → production (aprovação manual)
+```
+
+| Branch | Ambiente | Deploy | Trigger |
+|---|---|---|---|
+| `feature/*` | — | Sem deploy, apenas testes | Push |
+| `main` | **Staging** | Automático | Merge no main |
+| Tag `v*` | **Production** | Manual (aprovação) | Tag semântica |
+
+### Pipeline CI/CD (GitHub Actions)
+
+```yaml
+# Simplificado — fluxo real por etapa:
+
+on_push_main:
+  1. lint + type check (ruff, mypy)
+  2. testes unitários (pytest)
+  3. testes de integração (API contra modelo real)
+  4. build Docker (multi-stage)
+  5. push imagem para ECR (tag: git SHA)
+  6. deploy no ECS staging (task definition atualizada)
+  7. smoke test automatizado no staging (/health + /predict com fixture)
+  8. notificação Slack: "staging atualizado — SHA abc1234"
+
+on_tag_v*:
+  1. aprovação manual no GitHub (environment protection)
+  2. deploy no ECS production (mesma imagem do staging — sem rebuild)
+  3. blue/green switch (ver seção B.3)
+  4. smoke test em produção
+  5. notificação: "produção atualizada — v1.2.0"
+```
+
+**Ponto crítico:** a imagem que vai para produção é **a mesma** que foi testada em staging. Sem rebuild em produção — isso elimina a classe de bugs onde o ambiente de staging e o de produção diferem.
+
+### Separação entre treino e serving
+
+No Railway, o modelo é treinado dentro do Docker no momento do build. Em produção profissional, treino e serving são pipelines separados:
+
+```
+Pipeline de Treino (Airflow / GitHub Actions agendado):
+  Dados novos disponíveis?
+    → Treinar novo modelo
+    → Avaliar métricas vs. threshold mínimo
+    → Se aprovado: salvar artefatos no S3 com versão
+    → Registrar no MLflow (ou W&B)
+    → Abrir PR ou notificar time
+
+Pipeline de Serving (ECS):
+  No startup: baixar artefato versionado aprovado do S3
+  → Não treina, não acessa dados brutos
+  → Apenas carrega e serve
+```
+
+Benefício: o serviço de serving escala para zero custo em tempo idle; o treino roda quando há dados novos, independente do serving.
+
+---
+
+## B.3 Ciclo de Vida do Modelo (MLOps)
+
+### Model Registry
+
+Cada versão de modelo registrada contém:
 
 ```json
 {
-  "status": "healthy",
-  "model": "loaded",
-  "vectorstore": "loaded",
-  "llm": "configured",
-  "database": "connected"
+  "version": "2026-04-14-v3",
+  "trained_at": "2026-04-14T10:00:00Z",
+  "git_sha": "abc1234",
+  "dataset_version": "kc_house_2014_2015_v2",
+  "metrics": {
+    "test_mae": 62083,
+    "test_rmse": 125845,
+    "test_r2": 0.891,
+    "coverage_p10_p90": 0.802
+  },
+  "approved_by": "ml-team",
+  "promoted_to_prod": "2026-04-15T08:00:00Z",
+  "artifacts_s3": "s3://company-ml-artifacts/house-price/v3/"
 }
 ```
 
-Railway monitora este endpoint continuamente. Falha no health check aciona restart automático.
+**Ferramentas:** MLflow (self-hosted ou Databricks Managed), Weights & Biases, ou tabela customizada no PostgreSQL para times menores.
 
-### 5.2 Logs estruturados
+O registry permite:
+- Rollback para versão anterior em segundos (sem rebuild Docker)
+- Comparação histórica de métricas entre versões
+- Auditoria de quem aprovou qual versão e quando
 
-A API usa logging estruturado configurado em `app/core/logger.py`. Cada request logado com nível, timestamp, rota e tempo de resposta. Logs disponíveis no painel do Railway em tempo real.
+### Blue/Green Deploy para modelos
 
-### 5.3 O que seria monitorado em uma versão mais robusta
+![Estratégia Blue/Green](diagrams/04-bluegreen-deploy.svg)
 
-| Sinal | Método sugerido | Ação |
+> Fonte editável: [`diagrams/04-bluegreen-deploy.excalidraw`](diagrams/04-bluegreen-deploy.excalidraw)
+
+O processo de substituição de modelo em produção sem downtime:
+
+```
+Estado inicial:
+  ECS task "blue"  → modelo v2 (100% tráfego)
+  ECS task "green" → inativa
+
+Deploy de v3:
+  1. Subir task "green" com modelo v3
+  2. Health check do green (inclui smoke test de predição)
+  3. ALB: mover 100% do tráfego para green
+  4. Monitorar por 15 min (métricas de latência e erro)
+  5a. Estável → desligar blue (v2 descartado)
+  5b. Problema detectado → reverter ALB para blue (rollback < 30s)
+```
+
+Alternativa para times que querem mais segurança: **canary deploy** — enviar 5% do tráfego para o novo modelo primeiro, monitorar por 24h, e só então fazer o switch completo. Útil quando há dúvida sobre a qualidade do novo modelo em dados de produção reais.
+
+### Reentreino Automatizado
+
+```
+Trigger options (escolher conforme maturidade do time):
+
+Opção 1 — Agendado:
+  Cron semanal → coleta dados novos → treina → avalia → registra
+
+Opção 2 — Por volume de dados:
+  Acumulou N novos registros? → aciona pipeline de treino
+
+Opção 3 — Por drift detectado:
+  PSI > threshold em alguma feature? → alerta + aciona treino
+  KS-test detectou shift no target? → alerta + aciona treino
+```
+
+Para o contexto deste projeto, **Opção 1 (agendado mensal)** seria o ponto de partida — simples de implementar, auditável, sem risco de loops de reentreino por spike de dados.
+
+---
+
+## B.4 Observabilidade
+
+### Stack recomendada
+
+| Componente | Ferramenta | O que monitora |
 |---|---|---|
-| Latência do `/predict` | Prometheus + Grafana | Alertar se p95 > 2s |
-| Taxa de erro (5xx) | Railway built-in | Alertar se > 1% das requisições |
-| Volume de predições | Tabela de logs no PostgreSQL | Análise de uso e sazonalidade |
-| Distribuição de features de entrada | PSI calculado periodicamente | Detectar drift de dados |
-| Distribuição de previsões | KS-test vs treino | Detectar shift de mercado |
+| Métricas de infraestrutura | Prometheus + Grafana | CPU, memória, latência p50/p95/p99, throughput |
+| Logs estruturados | ELK Stack ou CloudWatch | Logs da aplicação, erros, auditoria |
+| Tracing distribuído | OpenTelemetry + Jaeger | Latência por etapa (feature eng → XGBoost → resposta) |
+| Alertas | PagerDuty / Opsgenie | On-call para degradação de SLA |
+| Drift de dados | custom ou Evidently AI | PSI das features de entrada vs. distribuição de treino |
+
+### Métricas de negócio (específicas para ML)
+
+Além das métricas de infraestrutura, um sistema de ML precisa monitorar a qualidade das previsões:
+
+| Sinal | Cálculo | Threshold de alerta | Ação |
+|---|---|---|---|
+| **Data drift** | PSI das features numéricas vs. distribuição de treino | PSI > 0.2 em qualquer feature principal | Investigar + considerar reentreino |
+| **Prediction drift** | KS-test da distribuição de previsões vs. baseline | p-value < 0.05 por 3 dias consecutivos | Alerta + análise do time |
+| **Coverage P10–P90** | % dos casos onde preço real cai no intervalo (quando disponível) | Cobertura < 70% | Reentreino urgente |
+| **Latência de inferência** | p95 do tempo de resposta do `/predict` | p95 > 500ms | Escalar ECS tasks |
+| **Taxa de erro** | % de respostas 5xx | > 0.5% em janela de 5 min | PagerDuty (on-call) |
+| **Requisições por minuto** | Throughput do endpoint `/predict` | < 10% da média histórica por > 30 min | Verificar problema upstream |
+
+### Dashboard de saúde do modelo
+
+Um dashboard dedicado (Grafana ou Metabase) exibiria em tempo real:
+- Distribuição de previsões do dia vs. distribuição histórica
+- Histograma de features de entrada mais usadas
+- Taxa de uso do intervalo P10–P90 (usuários que consultam o chat após ver o intervalo largo)
+- Erro real do modelo (quando preço de venda real é eventualmente conhecido)
 
 ---
 
-## 6. Versionamento do Modelo
+## B.5 Segurança e Governança
 
-### Abordagem atual
+### Gestão de segredos
 
-O modelo em produção é determinado pelo artefato em `artifacts/model/`. O `metadata.json` registra:
+**Nunca em variáveis de ambiente diretas em produção.** Fluxo seguro:
 
-```json
-{
-  "model_type": "XGBRegressor",
-  "trained_at": "2026-04-08T11:44:36Z",
-  "metrics": { ... },
-  "feature_importance": { ... }
-}
+```
+Secrets Manager (AWS Secrets Manager ou HashiCorp Vault)
+  → IAM role atribuída à ECS task (sem credenciais hardcoded)
+  → Task busca secrets no startup via SDK
+  → Rotação automática de chaves sem deploy
 ```
 
-Não há model registry formal — a versão em produção é aquela incluída no build Docker mais recente.
+Benefício: se uma task ECS for comprometida, o atacante não tem as credenciais no processo — elas são buscadas on-demand via IAM role que expira.
 
-### Evolução para versionamento formal
+### Autenticação da API
 
-Para uma operação mais robusta, o fluxo ideal seria:
+O endpoint `/predict` em produção real precisaria de autenticação:
 
-Treino local / CI → Avaliação automática (métricas vs threshold) → Registro no model registry (MLflow, W&B ou tabela no banco) → Artifact store (S3, GCS ou Railway Volume) → Deploy: API carrega versão mais recente aprovada no startup.
+```
+Opção A — API Key (simples, adequado para B2B):
+  X-API-Key: <token>
+  Validado via tabela no banco ou Redis
 
-Isso permite rollback para versão anterior sem rebuild Docker, comparação histórica de métricas por versão e auditoria de quando cada modelo entrou em produção.
+Opção B — JWT + OAuth (adequado para B2C / múltiplos usuários):
+  Authorization: Bearer <jwt>
+  Validado com biblioteca jose + provider (Auth0, Cognito, Keycloak)
+```
+
+Para o contexto atual (aplicação interna / demo), nenhuma autenticação é necessária. Para um produto público, autenticação é obrigatória antes de qualquer exposição real.
+
+### Compliance e auditoria
+
+- Todos os logs de predição retidos por X meses (conforme política de dados da empresa)
+- PII: se features incluírem dados pessoais (nome, CPF, endereço), o pipeline precisa de anonimização antes de armazenar logs
+- Model card: documentação pública das limitações, vieses conhecidos e métricas de fairness — especialmente importante se o modelo influenciar decisões de crédito ou aluguel
 
 ---
 
-## 7. Evolução Futura da Arquitetura
+## B.6 Comparação: Railway (atual) vs. Empresa (target)
 
-A arquitetura atual é adequada para demonstração e escala inicial. Para um contexto de produção real com volume crescente, os caminhos naturais seriam:
+| Dimensão | Railway (demo) | Empresa (producão real) |
+|---|---|---|
+| **Infraestrutura** | PaaS gerenciado, zero config | IaC (Terraform), ECS/K8s |
+| **CI/CD** | Deploy automático no push | Staging automático + produção com aprovação manual |
+| **Treino** | Dentro do Docker, a cada build | Pipeline separado (Airflow), agendado ou por trigger |
+| **Modelo** | Embutido na imagem Docker | Artefatos no S3, carregados no startup |
+| **Versionamento** | Implícito na imagem Docker | Model registry (MLflow ou W&B) |
+| **Rollback** | Redeploy da imagem anterior (minutos) | Rollback de artefato no S3 + restart (< 60s) |
+| **Deploy de modelo** | Downtime mínimo no restart | Blue/green sem downtime |
+| **Segredos** | Variáveis de ambiente no painel | AWS Secrets Manager + IAM roles |
+| **Observabilidade** | Logs no painel do Railway | Prometheus + Grafana + alertas PagerDuty |
+| **Drift** | Não monitorado | PSI por feature + KS-test no target |
+| **Custo mensal** | US$ 0–20 (free tier) | US$ 200–2.000+ (depende de escala) |
+| **Time necessário** | 1 pessoa | 1–2 MLEs + 1 DevOps/Platform |
 
-**Separação entre serving e treinamento**  
-O treino dentro do Docker é prático mas mistura responsabilidades. Em escala, o ideal é ter um pipeline de treinamento separado (Airflow, Prefect, ou GitHub Actions agendado) que produz artefatos e os empurra para um artifact store — o serviço de serving apenas carrega o artefato mais recente aprovado.
+---
 
-**Banco de inferência**  
-Persistir todas as predições com features de entrada permite análise de uso, detecção de drift e, quando o preço real de venda for conhecido, cálculo do erro real do modelo em produção.
+## B.7 Fluxo de Reentreino Pipeline (visão completa)
 
-**Cache de predições**  
-Combinações frequentes de features (imóveis populares) podem ser cacheadas com Redis para reduzir latência e custo computacional.
+![Pipeline de reentreino](diagrams/03-retraining-pipeline.svg)
 
-**Feature store**  
-Se dados demográficos ou de mercado forem atualizados periodicamente, uma feature store centraliza o enriquecimento de dados na inferência sem necessidade de rebuild do modelo.
+> Fonte editável: [`diagrams/03-retraining-pipeline.excalidraw`](diagrams/03-retraining-pipeline.excalidraw)
+
+O fluxo de reentreino completo em ambiente profissional:
+
+```
+1. Trigger (cron semanal ou drift detectado)
+     ↓
+2. Coleta de dados novos (S3 data lake ou data warehouse)
+     ↓
+3. Validação de qualidade dos dados (Great Expectations ou custom)
+   - Schema correto?
+   - Distribuição de features dentro do range histórico?
+   - Volume mínimo de novos registros atingido?
+     ↓ (falha → alerta, sem treino)
+4. Treino do novo modelo (job ECS ou SageMaker Training Job)
+     ↓
+5. Avaliação automática vs. thresholds mínimos:
+   - MAE < US$ 80.000 no holdout?
+   - R² > 0.85?
+   - Coverage P10–P90 > 75%?
+     ↓ (falha → alerta, sem promoção)
+6. Comparação vs. modelo em produção:
+   - Novo modelo é ≥ 2% melhor em MAE?
+     ↓ (não melhora → manter atual)
+7. Registrar no model registry (MLflow)
+     ↓
+8. Notificação ao time para aprovação manual
+     ↓
+9. Deploy blue/green em staging
+10. Aprovação manual (ou automática se todos os gates passaram)
+11. Deploy blue/green em produção
+12. Monitoramento por 48h
+13. Confirmar ou rollback
+```
+
+A presença de gates automáticos em cada etapa garante que um modelo degradado **nunca** chegue a produção automaticamente — mesmo que o pipeline de treino seja totalmente automatizado.

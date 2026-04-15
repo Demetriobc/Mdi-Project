@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="836" viewBox="0 0 880 836"
+     font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <filter id="sh" x="-4%" y="-6%" width="112%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arr" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0.5,8.5 3.5,0 6.5" fill="#94A3B8"/>
+    </marker>
+    <!-- Clip paths para rounded headers — cada um cobre exatamente a caixa da fase -->
+    <clipPath id="cp1"><rect x="60" y="68"  width="760" height="112" rx="14"/></clipPath>
+    <clipPath id="cp2"><rect x="60" y="220" width="760" height="112" rx="14"/></clipPath>
+    <clipPath id="cp3"><rect x="60" y="380" width="760" height="200" rx="14"/></clipPath>
+    <clipPath id="cp4"><rect x="60" y="622" width="760" height="200" rx="14"/></clipPath>
+  </defs>
+
+  <!-- Fundo -->
+  <rect width="880" height="836" fill="#F8FAFC"/>
+
+  <!-- TITLE BAR -->
+  <rect width="880" height="50" fill="#0F172A"/>
+  <text x="440" y="21" text-anchor="middle" font-size="15" font-weight="700" fill="white" letter-spacing="-0.2">Fluxo de Inferência — POST /predict</text>
+  <text x="440" y="41" text-anchor="middle" font-size="11" fill="#64748B">Do formulário React à resposta JSON com previsão e intervalo de confiança</text>
+
+  <!-- ══════════════════════════════════════════════════════
+       FASE 1 — CLIENTE   y=68  h=112  ends=180
+       Steps: cy=120, cy=160  (Δ=40px)
+  ══════════════════════════════════════════════════════ -->
+  <g filter="url(#sh)">
+    <rect x="60" y="68" width="760" height="112" rx="14" fill="white" stroke="#BFDBFE" stroke-width="1.5"/>
+  </g>
+  <rect x="60" y="68" width="760" height="32" fill="#1D4ED8" clip-path="url(#cp1)"/>
+  <text x="130" y="89"  font-size="11" font-weight="700" fill="white" letter-spacing="1">CLIENTE</text>
+  <text x="794" y="89"  text-anchor="end" font-size="10" fill="#93C5FD">React · TypeScript · Fetch API</text>
+
+  <circle cx="96" cy="120" r="14" fill="#1D4ED8"/>
+  <text x="96" y="125" text-anchor="middle" font-size="12" font-weight="700" fill="white">1</text>
+  <text x="120" y="115" font-size="13" font-weight="600" fill="#1e3a8a">Usuário preenche o formulário</text>
+  <text x="120" y="133" font-size="12" fill="#475569">Campos: bedrooms, bathrooms, sqft_living, grade, zipcode, lat/long…</text>
+
+  <circle cx="96" cy="160" r="14" fill="#1D4ED8"/>
+  <text x="96" y="165" text-anchor="middle" font-size="12" font-weight="700" fill="white">2</text>
+  <text x="120" y="155" font-size="13" font-weight="600" fill="#1e3a8a">Frontend serializa e envia</text>
+  <text x="120" y="173" font-size="12" fill="#475569">fetch(POST /predict, JSON) · Content-Type: application/json</text>
+
+  <!-- Seta 1 → 2 -->
+  <line x1="440" y1="180" x2="440" y2="220" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="452" y="191" width="130" height="17" rx="8" fill="#F1F5F9"/>
+  <text x="517" y="204" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">HTTP POST /predict</text>
+
+  <!-- ══════════════════════════════════════════════════════
+       FASE 2 — API VALIDAÇÃO   y=220  h=112  ends=332
+       Steps: cy=272, cy=312  (Δ=40px)
+  ══════════════════════════════════════════════════════ -->
+  <g filter="url(#sh)">
+    <rect x="60" y="220" width="760" height="112" rx="14" fill="white" stroke="#FCD34D" stroke-width="1.5"/>
+  </g>
+  <rect x="60" y="220" width="760" height="32" fill="#D97706" clip-path="url(#cp2)"/>
+  <text x="130" y="241" font-size="11" font-weight="700" fill="white" letter-spacing="1">API — VALIDAÇÃO</text>
+  <text x="794" y="241" text-anchor="end" font-size="10" fill="#FDE68A">FastAPI · Pydantic · Python 3.11</text>
+
+  <circle cx="96" cy="272" r="14" fill="#D97706"/>
+  <text x="96" y="277" text-anchor="middle" font-size="12" font-weight="700" fill="white">3</text>
+  <text x="120" y="267" font-size="13" font-weight="600" fill="#78350F">FastAPI recebe a requisição HTTP</text>
+  <text x="120" y="285" font-size="12" fill="#475569">Uvicorn despacha para o handler async de /predict</text>
+
+  <circle cx="96" cy="312" r="14" fill="#D97706"/>
+  <text x="96" y="317" text-anchor="middle" font-size="12" font-weight="700" fill="white">4</text>
+  <text x="120" y="307" font-size="13" font-weight="600" fill="#78350F">Pydantic valida o payload</text>
+  <text x="120" y="325" font-size="12" fill="#475569">Tipos, ranges e campos obrigatórios — retorna erro 422 se inválido</text>
+
+  <!-- Seta 2 → 3 -->
+  <line x1="440" y1="332" x2="440" y2="380" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="452" y="347" width="104" height="17" rx="8" fill="#F1F5F9"/>
+  <text x="504" y="360" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">payload validado</text>
+
+  <!-- ══════════════════════════════════════════════════════
+       FASE 3 — ML ENGINE   y=380  h=200  ends=580
+       Steps: cy=432, cy=472, cy=512, cy=552  (Δ=40px cada)
+  ══════════════════════════════════════════════════════ -->
+  <g filter="url(#sh)">
+    <rect x="60" y="380" width="760" height="200" rx="14" fill="white" stroke="#C4B5FD" stroke-width="1.5"/>
+  </g>
+  <rect x="60" y="380" width="760" height="32" fill="#7C3AED" clip-path="url(#cp3)"/>
+  <text x="130" y="401" font-size="11" font-weight="700" fill="white" letter-spacing="1">ML ENGINE</text>
+  <text x="794" y="401" text-anchor="end" font-size="10" fill="#DDD6FE">XGBoost · scikit-learn · SHAP · joblib</text>
+
+  <circle cx="96" cy="432" r="14" fill="#7C3AED"/>
+  <text x="96" y="437" text-anchor="middle" font-size="12" font-weight="700" fill="white">5</text>
+  <text x="120" y="427" font-size="13" font-weight="600" fill="#4C1D95">DerivedHousingFeatures transforma os dados</text>
+  <text x="120" y="445" font-size="12" fill="#475569">house_age · was_renovated · living_lot_ratio · bath_bed_ratio · living15_ratio · sale_month</text>
+
+  <circle cx="96" cy="472" r="14" fill="#7C3AED"/>
+  <text x="96" y="477" text-anchor="middle" font-size="12" font-weight="700" fill="white">6</text>
+  <text x="120" y="467" font-size="13" font-weight="600" fill="#4C1D95">ColumnTransformer pré-processa as features</text>
+  <text x="120" y="485" font-size="12" fill="#475569">StandardScaler (numéricas) + TargetEncoder (zipcode → mediana de treino)</text>
+
+  <circle cx="96" cy="512" r="14" fill="#7C3AED"/>
+  <text x="96" y="517" text-anchor="middle" font-size="12" font-weight="700" fill="white">7</text>
+  <text x="120" y="507" font-size="13" font-weight="600" fill="#4C1D95">XGBoost p50 gera a estimativa central</text>
+  <text x="120" y="525" font-size="12" fill="#475569">Previsão em log-espaço → expm1() → preço em USD</text>
+
+  <circle cx="96" cy="552" r="14" fill="#7C3AED"/>
+  <text x="96" y="557" text-anchor="middle" font-size="12" font-weight="700" fill="white">8</text>
+  <text x="120" y="547" font-size="13" font-weight="600" fill="#4C1D95">XGBoost p10 / p90 geram o intervalo de confiança</text>
+  <text x="120" y="565" font-size="12" fill="#475569">quantile_alpha=0.1 e 0.9 · cobertura ~80% dos casos · largura média US$ 194k</text>
+
+  <!-- Seta 3 → 4 -->
+  <line x1="440" y1="580" x2="440" y2="622" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="452" y="591" width="130" height="17" rx="8" fill="#F1F5F9"/>
+  <text x="517" y="604" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">price · p10 · p90 (USD)</text>
+
+  <!-- ══════════════════════════════════════════════════════
+       FASE 4 — RESPOSTA   y=622  h=200  ends=822
+       Steps: cy=674, cy=714, cy=754, cy=794  (Δ=40px cada)
+  ══════════════════════════════════════════════════════ -->
+  <g filter="url(#sh)">
+    <rect x="60" y="622" width="760" height="200" rx="14" fill="white" stroke="#86EFAC" stroke-width="1.5"/>
+  </g>
+  <rect x="60" y="622" width="760" height="32" fill="#15803D" clip-path="url(#cp4)"/>
+  <text x="130" y="643" font-size="11" font-weight="700" fill="white" letter-spacing="1">RESPOSTA</text>
+  <text x="794" y="643" text-anchor="end" font-size="10" fill="#86EFAC">JSON · React · PostgreSQL (async)</text>
+
+  <circle cx="96" cy="674" r="14" fill="#15803D"/>
+  <text x="96" y="679" text-anchor="middle" font-size="12" font-weight="700" fill="white">9</text>
+  <text x="120" y="669" font-size="13" font-weight="600" fill="#14532D">Consulta mediana do zipcode em metadata.json</text>
+  <text x="120" y="687" font-size="12" fill="#475569">zipcode_median_prices[zipcode] → comparação percentual com o mercado local</text>
+
+  <circle cx="96" cy="714" r="14" fill="#15803D"/>
+  <text x="96" y="719" text-anchor="middle" font-size="12" font-weight="700" fill="white">10</text>
+  <text x="120" y="709" font-size="13" font-weight="600" fill="#14532D">Log assíncrono no PostgreSQL</text>
+  <text x="120" y="727" font-size="12" fill="#475569">Fire-and-forget · não bloqueia resposta · registra features + previsão + timestamp</text>
+
+  <circle cx="96" cy="754" r="14" fill="#15803D"/>
+  <text x="96" y="759" text-anchor="middle" font-size="12" font-weight="700" fill="white">11</text>
+  <text x="120" y="749" font-size="13" font-weight="600" fill="#14532D">API retorna JSON estruturado</text>
+  <text x="120" y="767" font-size="12" fill="#475569">{ price, p10, p90, zipcode_median, currency: "USD", model_version }</text>
+
+  <circle cx="96" cy="794" r="14" fill="#15803D"/>
+  <text x="96" y="799" text-anchor="middle" font-size="12" font-weight="700" fill="white">12</text>
+  <text x="120" y="789" font-size="13" font-weight="600" fill="#14532D">React renderiza o cartão de resultado</text>
+  <text x="120" y="807" font-size="12" fill="#475569">Estimativa central · faixa P10–P90 · comparação com mediana do bairro · chat disponível</text>
+</svg>

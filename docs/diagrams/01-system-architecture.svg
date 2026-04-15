@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="822" viewBox="0 0 880 822"
+     font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <filter id="sh" x="-6%" y="-6%" width="116%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.09"/>
+    </filter>
+    <marker id="arr" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0.5,8.5 3.5,0 6.5" fill="#94A3B8"/>
+    </marker>
+    <clipPath id="cu"><rect x="290" y="68" width="300" height="72" rx="12"/></clipPath>
+    <clipPath id="cfe"><rect x="140" y="174" width="600" height="106" rx="12"/></clipPath>
+    <clipPath id="cbe"><rect x="40" y="322" width="800" height="464" rx="16"/></clipPath>
+    <clipPath id="cml"><rect x="64" y="410" width="326" height="214" rx="12"/></clipPath>
+    <clipPath id="crag"><rect x="490" y="410" width="326" height="214" rx="12"/></clipPath>
+    <clipPath id="cpg"><rect x="64" y="642" width="752" height="118" rx="12"/></clipPath>
+  </defs>
+
+  <!-- Page background -->
+  <rect width="880" height="822" fill="#F8FAFC"/>
+
+  <!-- ── TITLE BAR ─────────────────────────────── -->
+  <rect width="880" height="50" fill="#0F172A"/>
+  <text x="440" y="21" text-anchor="middle" font-size="15" font-weight="700" fill="white" letter-spacing="-0.2">Arquitetura do Sistema — House Price Copilot</text>
+  <text x="440" y="41" text-anchor="middle" font-size="11" fill="#64748B">FastAPI · React · XGBoost · FAISS · PostgreSQL · Railway · Docker</text>
+
+  <!-- ── USER ──────────────────────────────────── -->
+  <g filter="url(#sh)">
+    <rect x="290" y="68" width="300" height="72" rx="12" fill="white" stroke="#BFDBFE" stroke-width="1.5"/>
+  </g>
+  <rect x="290" y="68" width="300" height="32" fill="#1D4ED8" clip-path="url(#cu)"/>
+  <text x="440" y="89" text-anchor="middle" font-size="11" font-weight="700" fill="white" letter-spacing="1">USUÁRIO</text>
+  <text x="440" y="122" text-anchor="middle" font-size="13" fill="#334155">Navegador · Chrome · Firefox · Safari</text>
+
+  <!-- Arrow User → Frontend -->
+  <line x1="440" y1="140" x2="440" y2="174" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="452" y="148" width="50" height="17" rx="8" fill="#EFF6FF"/>
+  <text x="477" y="161" text-anchor="middle" font-size="10" font-weight="600" fill="#1D4ED8">HTTPS</text>
+
+  <!-- ── FRONTEND ───────────────────────────────── -->
+  <g filter="url(#sh)">
+    <rect x="140" y="174" width="600" height="106" rx="12" fill="white" stroke="#BFDBFE" stroke-width="1.5"/>
+  </g>
+  <rect x="140" y="174" width="600" height="32" fill="#1D4ED8" clip-path="url(#cfe)"/>
+  <text x="300" y="195" text-anchor="middle" font-size="11" font-weight="700" fill="white" letter-spacing="1">FRONTEND</text>
+  <text x="706" y="194" text-anchor="end" font-size="10" fill="#93C5FD">Railway · Serviço 2</text>
+  <text x="440" y="228" text-anchor="middle" font-size="13" font-weight="500" fill="#1e3a8a">React + TypeScript + Tailwind CSS + shadcn/ui · servido por Nginx</text>
+  <!-- Tech pills -->
+  <rect x="158" y="248" width="48" height="20" rx="10" fill="#DBEAFE"/>
+  <text x="182" y="262" text-anchor="middle" font-size="10" font-weight="600" fill="#1D4ED8">React</text>
+  <rect x="213" y="248" width="82" height="20" rx="10" fill="#DBEAFE"/>
+  <text x="254" y="262" text-anchor="middle" font-size="10" font-weight="600" fill="#1D4ED8">TypeScript</text>
+  <rect x="302" y="248" width="62" height="20" rx="10" fill="#DBEAFE"/>
+  <text x="333" y="262" text-anchor="middle" font-size="10" font-weight="600" fill="#1D4ED8">Tailwind</text>
+  <rect x="371" y="248" width="44" height="20" rx="10" fill="#DBEAFE"/>
+  <text x="393" y="262" text-anchor="middle" font-size="10" font-weight="600" fill="#1D4ED8">Vite</text>
+  <rect x="422" y="248" width="48" height="20" rx="10" fill="#DBEAFE"/>
+  <text x="446" y="262" text-anchor="middle" font-size="10" font-weight="600" fill="#1D4ED8">Nginx</text>
+  <rect x="477" y="248" width="68" height="20" rx="10" fill="#DBEAFE"/>
+  <text x="511" y="262" text-anchor="middle" font-size="10" font-weight="600" fill="#1D4ED8">shadcn/ui</text>
+
+  <!-- Arrow Frontend → Backend -->
+  <line x1="440" y1="280" x2="440" y2="322" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="452" y="287" width="82" height="17" rx="8" fill="#F1F5F9"/>
+  <text x="493" y="300" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">HTTP / JSON</text>
+  <text x="493" y="318" text-anchor="middle" font-size="9" fill="#94A3B8">VITE_API_BASE_URL</text>
+
+  <!-- ── BACKEND CONTAINER ──────────────────────── -->
+  <g filter="url(#sh)">
+    <rect x="40" y="322" width="800" height="464" rx="16" fill="white" stroke="#E2E8F0" stroke-width="1.5"/>
+  </g>
+  <rect x="40" y="322" width="800" height="38" fill="#1E293B" clip-path="url(#cbe)"/>
+  <text x="200" y="346" text-anchor="middle" font-size="11" font-weight="700" fill="white" letter-spacing="1">BACKEND API</text>
+  <text x="732" y="346" text-anchor="end" font-size="10" fill="#94A3B8">FastAPI · Uvicorn · Python 3.11 · Railway Serviço 1 · porta 8080</text>
+
+  <!-- Endpoints strip -->
+  <rect x="200" y="370" width="480" height="28" rx="14" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="1"/>
+  <text x="305" y="388" text-anchor="middle" font-size="11" font-family="monospace" fill="#15803D" font-weight="600">GET /health</text>
+  <line x1="374" y1="375" x2="374" y2="393" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="440" y="388" text-anchor="middle" font-size="11" font-family="monospace" fill="#7C3AED" font-weight="600">POST /predict</text>
+  <line x1="506" y1="375" x2="506" y2="393" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="576" y="388" text-anchor="middle" font-size="11" font-family="monospace" fill="#B45309" font-weight="600">POST /chat</text>
+
+  <!-- ── ML MODEL ───────────────────────────────── -->
+  <g filter="url(#sh)">
+    <rect x="64" y="410" width="326" height="214" rx="12" fill="#F5F3FF" stroke="#C4B5FD" stroke-width="1.5"/>
+  </g>
+  <rect x="64" y="410" width="326" height="32" fill="#7C3AED" clip-path="url(#cml)"/>
+  <text x="227" y="431" text-anchor="middle" font-size="11" font-weight="700" fill="white" letter-spacing="1">ML MODEL</text>
+  <text x="227" y="469" text-anchor="middle" font-size="13.5" font-weight="600" fill="#4C1D95">XGBoost · 3 modelos em memória</text>
+  <text x="227" y="491" text-anchor="middle" font-size="12" fill="#6D28D9">p50 (estimativa) · p10 (piso) · p90 (teto)</text>
+  <text x="227" y="513" text-anchor="middle" font-size="12" fill="#6D28D9">Pipeline: DerivedFeatures + TargetEncoder</text>
+  <text x="227" y="535" text-anchor="middle" font-size="11" font-family="monospace" fill="#7C3AED">artifacts/model/*.joblib</text>
+  <text x="227" y="556" text-anchor="middle" font-size="11" fill="#94A3B8">latência &lt; 100 ms · carregado no startup</text>
+  <!-- ML pills -->
+  <rect x="78" y="570" width="64" height="19" rx="9" fill="#EDE9FE"/>
+  <text x="110" y="583" text-anchor="middle" font-size="10" font-weight="600" fill="#6D28D9">XGBoost</text>
+  <rect x="149" y="570" width="78" height="19" rx="9" fill="#EDE9FE"/>
+  <text x="188" y="583" text-anchor="middle" font-size="10" font-weight="600" fill="#6D28D9">scikit-learn</text>
+  <rect x="234" y="570" width="44" height="19" rx="9" fill="#EDE9FE"/>
+  <text x="256" y="583" text-anchor="middle" font-size="10" font-weight="600" fill="#6D28D9">SHAP</text>
+  <rect x="285" y="570" width="54" height="19" rx="9" fill="#EDE9FE"/>
+  <text x="312" y="583" text-anchor="middle" font-size="10" font-weight="600" fill="#6D28D9">joblib</text>
+
+  <!-- ── RAG + LLM ──────────────────────────────── -->
+  <g filter="url(#sh)">
+    <rect x="490" y="410" width="326" height="214" rx="12" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.5"/>
+  </g>
+  <rect x="490" y="410" width="326" height="32" fill="#D97706" clip-path="url(#crag)"/>
+  <text x="653" y="431" text-anchor="middle" font-size="11" font-weight="700" fill="white" letter-spacing="1">RAG + LLM</text>
+  <text x="653" y="469" text-anchor="middle" font-size="13.5" font-weight="600" fill="#78350F">Assistente Conversacional</text>
+  <text x="653" y="491" text-anchor="middle" font-size="12" fill="#92400E">Busca vetorial FAISS · top-4 chunks</text>
+  <text x="653" y="513" text-anchor="middle" font-size="12" fill="#92400E">Embeddings locais via fastembed</text>
+  <text x="653" y="535" text-anchor="middle" font-size="12" fill="#92400E">LLM: GPT-4o-mini / Groq Llama 3.1</text>
+  <text x="653" y="556" text-anchor="middle" font-size="11" fill="#94A3B8">POST /chat · contexto do imóvel injetado</text>
+  <!-- RAG pills -->
+  <rect x="504" y="570" width="44" height="19" rx="9" fill="#FEF3C7"/>
+  <text x="526" y="583" text-anchor="middle" font-size="10" font-weight="600" fill="#92400E">FAISS</text>
+  <rect x="555" y="570" width="74" height="19" rx="9" fill="#FEF3C7"/>
+  <text x="592" y="583" text-anchor="middle" font-size="10" font-weight="600" fill="#92400E">fastembed</text>
+  <rect x="636" y="570" width="78" height="19" rx="9" fill="#FEF3C7"/>
+  <text x="675" y="583" text-anchor="middle" font-size="10" font-weight="600" fill="#92400E">GPT-4o-mini</text>
+  <rect x="721" y="570" width="44" height="19" rx="9" fill="#FEF3C7"/>
+  <text x="743" y="583" text-anchor="middle" font-size="10" font-weight="600" fill="#92400E">Groq</text>
+
+  <!-- Connector ML ↔ RAG -->
+  <line x1="390" y1="517" x2="490" y2="517" stroke="#E2E8F0" stroke-width="1.5" stroke-dasharray="5,3"/>
+
+  <!-- ── POSTGRESQL ──────────────────────────────── -->
+  <g filter="url(#sh)">
+    <rect x="64" y="642" width="752" height="118" rx="12" fill="#F0FDF4" stroke="#86EFAC" stroke-width="1.5"/>
+  </g>
+  <rect x="64" y="642" width="752" height="32" fill="#15803D" clip-path="url(#cpg)"/>
+  <text x="440" y="663" text-anchor="middle" font-size="11" font-weight="700" fill="white" letter-spacing="1">POSTGRESQL · LOGS DE PREDIÇÃO</text>
+  <text x="440" y="700" text-anchor="middle" font-size="13" font-weight="500" fill="#14532D">Railway managed · timestamp · features · previsão · intervalo P10–P90 · feedback</text>
+  <text x="440" y="722" text-anchor="middle" font-size="11.5" fill="#166534">Opcional — API opera sem banco · logs habilitam drift detection e auditoria</text>
+  <!-- PG pills -->
+  <rect x="280" y="735" width="92" height="19" rx="9" fill="#DCFCE7"/>
+  <text x="326" y="748" text-anchor="middle" font-size="10" font-weight="600" fill="#15803D">PostgreSQL 15</text>
+  <rect x="380" y="735" width="96" height="19" rx="9" fill="#DCFCE7"/>
+  <text x="428" y="748" text-anchor="middle" font-size="10" font-weight="600" fill="#15803D">Railway managed</text>
+  <rect x="484" y="735" width="116" height="19" rx="9" fill="#DCFCE7"/>
+  <text x="542" y="748" text-anchor="middle" font-size="10" font-weight="600" fill="#15803D">Drift detection</text>
+</svg>

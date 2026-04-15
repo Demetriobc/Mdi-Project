@@ -1,0 +1,163 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="938" viewBox="0 0 880 938"
+     font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <filter id="sh" x="-4%" y="-6%" width="112%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arr" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0.5,8.5 3.5,0 6.5" fill="#94A3B8"/>
+    </marker>
+    <marker id="arr-g" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0.5,8.5 3.5,0 6.5" fill="#15803D"/>
+    </marker>
+    <marker id="arr-r" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0.5,8.5 3.5,0 6.5" fill="#DC2626"/>
+    </marker>
+    <clipPath id="calb"><rect x="240" y="68" width="400" height="64" rx="12"/></clipPath>
+    <clipPath id="cbl"><rect x="50" y="178" width="340" height="138" rx="14"/></clipPath>
+    <clipPath id="cgr"><rect x="490" y="178" width="340" height="138" rx="14"/></clipPath>
+    <clipPath id="cgt"><rect x="120" y="372" width="640" height="208" rx="14"/></clipPath>
+    <clipPath id="csw"><rect x="200" y="628" width="480" height="58" rx="12"/></clipPath>
+    <clipPath id="cmo"><rect x="200" y="704" width="480" height="58" rx="12"/></clipPath>
+    <clipPath id="cok"><rect x="50" y="818" width="320" height="88" rx="14"/></clipPath>
+    <clipPath id="crb"><rect x="510" y="818" width="320" height="88" rx="14"/></clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="880" height="938" fill="#F8FAFC"/>
+
+  <!-- Title Bar -->
+  <rect width="880" height="50" fill="#0F172A"/>
+  <text x="440" y="21" text-anchor="middle" font-size="15" font-weight="700" fill="white" letter-spacing="-0.2">Blue/Green Deploy — Troca de Modelo sem Downtime</text>
+  <text x="440" y="41" text-anchor="middle" font-size="11" fill="#64748B">ECS · Application Load Balancer · Rollback em &lt; 30s · MLflow registry</text>
+
+  <!-- ── ALB ────────────────────────────────────── -->
+  <g filter="url(#sh)">
+    <rect x="240" y="68" width="400" height="64" rx="12" fill="white" stroke="#CBD5E1" stroke-width="1.5"/>
+  </g>
+  <rect x="240" y="68" width="400" height="32" fill="#475569" clip-path="url(#calb)"/>
+  <text x="440" y="89" text-anchor="middle" font-size="11" font-weight="700" fill="white" letter-spacing="1">APPLICATION LOAD BALANCER</text>
+  <text x="440" y="117" text-anchor="middle" font-size="13" fill="#334155">Controla roteamento de tráfego entre Blue e Green · SSL termination</text>
+
+  <!-- Arrows ALB → BLUE and ALB → GREEN -->
+  <line x1="340" y1="132" x2="230" y2="178" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="257" y="157" text-anchor="middle" font-size="10" font-weight="600" fill="#1D4ED8">100% tráfego</text>
+  <line x1="540" y1="132" x2="650" y2="178" stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arr)"/>
+  <text x="624" y="157" text-anchor="middle" font-size="10" font-weight="600" fill="#15803D">0% (novo)</text>
+
+  <!-- ── BLUE TASK ───────────────────────────────── -->
+  <g filter="url(#sh)">
+    <rect x="50" y="178" width="340" height="138" rx="14" fill="white" stroke="#BFDBFE" stroke-width="2"/>
+  </g>
+  <rect x="50" y="178" width="340" height="34" fill="#1D4ED8" clip-path="url(#cbl)"/>
+  <text x="130" y="199" font-size="11" font-weight="700" fill="white" letter-spacing="1">BLUE — ECS Task (PRODUÇÃO)</text>
+  <text x="220" y="232" text-anchor="middle" font-size="13.5" font-weight="600" fill="#1e3a8a">Modelo v2 · atual</text>
+  <text x="220" y="254" text-anchor="middle" font-size="12" fill="#334155">Artefatos: s3://.../house-price/v2/</text>
+  <text x="220" y="274" text-anchor="middle" font-size="12" fill="#334155">Status: ATIVO · health check OK</text>
+  <rect x="78" y="288" width="98" height="19" rx="9" fill="#DBEAFE"/>
+  <text x="127" y="301" text-anchor="middle" font-size="10" font-weight="600" fill="#1D4ED8">ECS Fargate</text>
+  <rect x="184" y="288" width="78" height="19" rx="9" fill="#DBEAFE"/>
+  <text x="223" y="301" text-anchor="middle" font-size="10" font-weight="600" fill="#1D4ED8">Python 3.11</text>
+  <rect x="270" y="288" width="78" height="19" rx="9" fill="#DBEAFE"/>
+  <text x="309" y="301" text-anchor="middle" font-size="10" font-weight="600" fill="#1D4ED8">XGBoost v2</text>
+
+  <!-- ── GREEN TASK ──────────────────────────────── -->
+  <g filter="url(#sh)">
+    <rect x="490" y="178" width="340" height="138" rx="14" fill="white" stroke="#86EFAC" stroke-width="2" stroke-dasharray="8,4"/>
+  </g>
+  <rect x="490" y="178" width="340" height="34" fill="#15803D" clip-path="url(#cgr)"/>
+  <text x="570" y="199" font-size="11" font-weight="700" fill="white" letter-spacing="1">GREEN — ECS Task (NOVO)</text>
+  <text x="660" y="232" text-anchor="middle" font-size="13.5" font-weight="600" fill="#14532D">Modelo v3 · candidato</text>
+  <text x="660" y="254" text-anchor="middle" font-size="12" fill="#334155">Artefatos: s3://.../house-price/v3/</text>
+  <text x="660" y="274" text-anchor="middle" font-size="12" fill="#64748B">Status: INICIANDO… · health check pendente</text>
+  <rect x="518" y="288" width="98" height="19" rx="9" fill="#DCFCE7"/>
+  <text x="567" y="301" text-anchor="middle" font-size="10" font-weight="600" fill="#15803D">ECS Fargate</text>
+  <rect x="624" y="288" width="78" height="19" rx="9" fill="#DCFCE7"/>
+  <text x="663" y="301" text-anchor="middle" font-size="10" font-weight="600" fill="#15803D">Python 3.11</text>
+  <rect x="710" y="288" width="78" height="19" rx="9" fill="#DCFCE7"/>
+  <text x="749" y="301" text-anchor="middle" font-size="10" font-weight="600" fill="#15803D">XGBoost v3</text>
+
+  <!-- Arrows Blue+Green → Gates -->
+  <path d="M220 316 L220 350 L440 350 L440 372" stroke="#CBD5E1" stroke-width="1.5" fill="none" marker-end="url(#arr)"/>
+  <path d="M660 316 L660 350 L440 350" stroke="#CBD5E1" stroke-width="1.5" fill="none"/>
+
+  <!-- ── GATES AUTOMÁTICOS ───────────────────────── -->
+  <!--
+    y=372  h=208  ends=580
+    header h=32 → items start at y=372+32+20=424
+    Δ=40px entre cy's: cy=424, 464, 504, 544
+  -->
+  <g filter="url(#sh)">
+    <rect x="120" y="372" width="640" height="208" rx="14" fill="white" stroke="#C4B5FD" stroke-width="1.5"/>
+  </g>
+  <rect x="120" y="372" width="640" height="32" fill="#7C3AED" clip-path="url(#cgt)"/>
+  <text x="280" y="393" font-size="11" font-weight="700" fill="white" letter-spacing="1">GATES DE VALIDAÇÃO — GREEN deve passar todos</text>
+
+  <!-- Gate check 1 — cy=424 -->
+  <circle cx="148" cy="424" r="12" fill="#DCFCE7" stroke="#15803D" stroke-width="2"/>
+  <text x="148" y="429" text-anchor="middle" font-size="13" font-weight="700" fill="#15803D">✓</text>
+  <text x="170" y="419" font-size="12.5" font-weight="600" fill="#4C1D95">GET /health retorna status: healthy em &lt; 5 segundos</text>
+
+  <!-- Gate check 2 — cy=464 -->
+  <circle cx="148" cy="464" r="12" fill="#DCFCE7" stroke="#15803D" stroke-width="2"/>
+  <text x="148" y="469" text-anchor="middle" font-size="13" font-weight="700" fill="#15803D">✓</text>
+  <text x="170" y="459" font-size="12.5" font-weight="600" fill="#4C1D95">Smoke test: /predict(fixture) retorna preço no range esperado</text>
+
+  <!-- Gate check 3 — cy=504 -->
+  <circle cx="148" cy="504" r="12" fill="#DCFCE7" stroke="#15803D" stroke-width="2"/>
+  <text x="148" y="509" text-anchor="middle" font-size="13" font-weight="700" fill="#15803D">✓</text>
+  <text x="170" y="499" font-size="12.5" font-weight="600" fill="#4C1D95">MAE no holdout de staging abaixo do threshold mínimo</text>
+
+  <!-- Gate check 4 — cy=544 -->
+  <circle cx="148" cy="544" r="12" fill="#DCFCE7" stroke="#15803D" stroke-width="2"/>
+  <text x="148" y="549" text-anchor="middle" font-size="13" font-weight="700" fill="#15803D">✓</text>
+  <text x="170" y="539" font-size="12.5" font-weight="600" fill="#4C1D95">Latência p95 &lt; 300 ms sob carga sintética</text>
+
+  <!-- Arrow Gates → Switch -->
+  <line x1="440" y1="580" x2="440" y2="628" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="454" y="592" width="110" height="17" rx="8" fill="#F1F5F9"/>
+  <text x="509" y="605" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">todos gates ok</text>
+
+  <!-- ── SWITCH ALB ──────────────────────────────── -->
+  <g filter="url(#sh)">
+    <rect x="200" y="628" width="480" height="58" rx="12" fill="white" stroke="#FCD34D" stroke-width="1.5"/>
+  </g>
+  <rect x="200" y="628" width="480" height="30" fill="#D97706" clip-path="url(#csw)"/>
+  <text x="440" y="648" text-anchor="middle" font-size="11" font-weight="700" fill="white" letter-spacing="1">SWITCH DE TRÁFEGO — ALB</text>
+  <text x="440" y="674" text-anchor="middle" font-size="13" fill="#334155">100% tráfego → GREEN (v3) · BLUE permanece em standby por 48h</text>
+
+  <!-- Arrow Switch → Monitor -->
+  <line x1="440" y1="686" x2="440" y2="704" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ── MONITORAMENTO ───────────────────────────── -->
+  <g filter="url(#sh)">
+    <rect x="200" y="704" width="480" height="58" rx="12" fill="white" stroke="#CBD5E1" stroke-width="1.5"/>
+  </g>
+  <rect x="200" y="704" width="480" height="30" fill="#475569" clip-path="url(#cmo)"/>
+  <text x="440" y="724" text-anchor="middle" font-size="11" font-weight="700" fill="white" letter-spacing="1">MONITORAMENTO — 48 HORAS</text>
+  <text x="440" y="750" text-anchor="middle" font-size="13" fill="#334155">Prometheus: latência p95 · taxa de erro 5xx · distribuição de previsões · PSI features</text>
+
+  <!-- Arrows Monitor → OK / Rollback -->
+  <path d="M320 762 L210 818" stroke="#15803D" stroke-width="1.5" fill="none" marker-end="url(#arr-g)"/>
+  <text x="217" y="790" font-size="11" font-weight="600" fill="#15803D">estável</text>
+  <path d="M560 762 L670 818" stroke="#DC2626" stroke-width="1.5" fill="none" marker-end="url(#arr-r)"/>
+  <text x="636" y="790" font-size="11" font-weight="600" fill="#DC2626">problema</text>
+
+  <!-- ── ESTÁVEL (OK) ────────────────────────────── -->
+  <g filter="url(#sh)">
+    <rect x="50" y="818" width="320" height="88" rx="14" fill="white" stroke="#86EFAC" stroke-width="2"/>
+  </g>
+  <rect x="50" y="818" width="320" height="32" fill="#15803D" clip-path="url(#cok)"/>
+  <text x="130" y="839" font-size="11" font-weight="700" fill="white" letter-spacing="1">ESTÁVEL</text>
+  <text x="210" y="872" text-anchor="middle" font-size="13" font-weight="600" fill="#14532D">BLUE (v2) descartado</text>
+  <text x="210" y="892" text-anchor="middle" font-size="12" fill="#166534">GREEN = nova produção · MLflow: v3 → "production"</text>
+
+  <!-- ── ROLLBACK ────────────────────────────────── -->
+  <g filter="url(#sh)">
+    <rect x="510" y="818" width="320" height="88" rx="14" fill="white" stroke="#FCA5A5" stroke-width="2"/>
+  </g>
+  <rect x="510" y="818" width="320" height="32" fill="#DC2626" clip-path="url(#crb)"/>
+  <text x="590" y="839" font-size="11" font-weight="700" fill="white" letter-spacing="1">ROLLBACK IMEDIATO</text>
+  <text x="670" y="872" text-anchor="middle" font-size="13" font-weight="600" fill="#991B1B">ALB reverte para BLUE (v2)</text>
+  <text x="670" y="892" text-anchor="middle" font-size="12" fill="#B91C1C">Rollback &lt; 30s · GREEN descartado · incidente registrado</text>
+</svg>

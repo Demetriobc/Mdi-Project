@@ -75,10 +75,9 @@ O reentreino não precisa ser agendado em calendário fixo. Gatilhos baseados em
 
 ## 5. Pipeline de Reentreino
 
-> **Diagrama interativo:** [`docs/diagrams/03-retraining-pipeline.excalidraw`](diagrams/03-retraining-pipeline.excalidraw)  
-> Abra no VS Code com a extensão **Excalidraw** ou em [excalidraw.com](https://excalidraw.com).
+![Pipeline de reentreino](diagrams/03-retraining-pipeline.svg)
 
-![Pipeline de reentreino](diagrams/03-retraining-pipeline.excalidraw)
+> Fonte editável: [`diagrams/03-retraining-pipeline.excalidraw`](diagrams/03-retraining-pipeline.excalidraw)
 
 **Full retrain vs windowed retrain:**
 
@@ -111,9 +110,9 @@ O processo de promoção deve ser feito com controles para evitar interrupção 
 
 ### Abordagem recomendada (blue-green)
 
-> **Diagrama interativo:** [`docs/diagrams/04-bluegreen-deploy.excalidraw`](diagrams/04-bluegreen-deploy.excalidraw)
+![Blue-green deploy](diagrams/04-bluegreen-deploy.svg)
 
-![Blue-green deploy](diagrams/04-bluegreen-deploy.excalidraw)
+> Fonte editável: [`diagrams/04-bluegreen-deploy.excalidraw`](diagrams/04-bluegreen-deploy.excalidraw)
 
 Na arquitetura atual (Railway), o switch é feito via novo deploy da imagem Docker. O rollback é viável via Railway Deployments (reverter para build anterior).
 

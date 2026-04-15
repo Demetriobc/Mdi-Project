@@ -1,0 +1,177 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="936" viewBox="0 0 880 936"
+     font-family="system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+  <defs>
+    <filter id="sh" x="-4%" y="-6%" width="112%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+    <marker id="arr" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0.5,8.5 3.5,0 6.5" fill="#94A3B8"/>
+    </marker>
+    <!--
+      Coordenadas calculadas por bloco:
+
+      TRIGGER   y=68  h=90  → ends=158
+      DADOS     y=198 h=152 → ends=350   steps cy=250,290   gate y=318
+      TREINAMENTO y=394 h=164 → ends=558  steps cy=442,482,522
+      AVALIAÇÃO y=600 h=162 → ends=762   steps cy=648,688   gate y=718
+      DEPLOY    y=806 h=120 → ends=926   steps cy=854,894
+
+      Todos os steps usam Δ=40px entre cy's
+    -->
+    <clipPath id="ct" ><rect x="60" y="68"  width="760" height="90"  rx="14"/></clipPath>
+    <clipPath id="cd" ><rect x="60" y="198" width="760" height="152" rx="14"/></clipPath>
+    <clipPath id="ctr"><rect x="60" y="394" width="760" height="164" rx="14"/></clipPath>
+    <clipPath id="ce" ><rect x="60" y="600" width="760" height="162" rx="14"/></clipPath>
+    <clipPath id="cdp"><rect x="60" y="806" width="760" height="120" rx="14"/></clipPath>
+  </defs>
+
+  <!-- Fundo -->
+  <rect width="880" height="936" fill="#F8FAFC"/>
+
+  <!-- TITLE BAR -->
+  <rect width="880" height="50" fill="#0F172A"/>
+  <text x="440" y="21" text-anchor="middle" font-size="15" font-weight="700" fill="white" letter-spacing="-0.2">Pipeline de Reentreino Contínuo</text>
+  <text x="440" y="41" text-anchor="middle" font-size="11" fill="#64748B">Ciclo de vida do modelo · Governança · Deploy blue/green automático</text>
+
+  <!-- ══════════════════════════════════════════════════════
+       TRIGGER   y=68  h=90  ends=158
+  ══════════════════════════════════════════════════════ -->
+  <g filter="url(#sh)">
+    <rect x="60" y="68" width="760" height="90" rx="14" fill="white" stroke="#CBD5E1" stroke-width="1.5"/>
+  </g>
+  <rect x="60" y="68" width="760" height="32" fill="#475569" clip-path="url(#ct)"/>
+  <text x="130" y="89" font-size="11" font-weight="700" fill="white" letter-spacing="1">TRIGGER — GATILHOS DE REENTREINO</text>
+
+  <!-- 4 pills em linha, espaçadas uniformemente -->
+  <rect x="70"  y="108" width="170" height="36" rx="10" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>
+  <text x="155" y="123" text-anchor="middle" font-size="11" font-weight="600" fill="#334155">Cron semanal</text>
+  <text x="155" y="138" text-anchor="middle" font-size="10" fill="#64748B">toda segunda-feira 02:00</text>
+
+  <rect x="252" y="108" width="170" height="36" rx="10" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1"/>
+  <text x="337" y="123" text-anchor="middle" font-size="11" font-weight="600" fill="#78350F">Data drift detectado</text>
+  <text x="337" y="138" text-anchor="middle" font-size="10" fill="#92400E">PSI &gt; 0.2 em feature principal</text>
+
+  <rect x="434" y="108" width="170" height="36" rx="10" fill="#EDE9FE" stroke="#C4B5FD" stroke-width="1"/>
+  <text x="519" y="123" text-anchor="middle" font-size="11" font-weight="600" fill="#4C1D95">Volume de dados novo</text>
+  <text x="519" y="138" text-anchor="middle" font-size="10" fill="#6D28D9">≥ 5.000 novas transações</text>
+
+  <rect x="616" y="108" width="194" height="36" rx="10" fill="#FEE2E2" stroke="#FCA5A5" stroke-width="1"/>
+  <text x="713" y="123" text-anchor="middle" font-size="11" font-weight="600" fill="#991B1B">MAPE degradado</text>
+  <text x="713" y="138" text-anchor="middle" font-size="10" fill="#B91C1C">MAPE atual &gt; referência + 5pp</text>
+
+  <!-- Seta TRIGGER → DADOS -->
+  <line x1="440" y1="158" x2="440" y2="198" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ══════════════════════════════════════════════════════
+       DADOS   y=198  h=152  ends=350
+       Steps: cy=250 (Δ+40) cy=290
+       Gate inside box: y=318  h=22  ends=340  (10px gap até fundo)
+  ══════════════════════════════════════════════════════ -->
+  <g filter="url(#sh)">
+    <rect x="60" y="198" width="760" height="152" rx="14" fill="white" stroke="#BFDBFE" stroke-width="1.5"/>
+  </g>
+  <rect x="60" y="198" width="760" height="32" fill="#1D4ED8" clip-path="url(#cd)"/>
+  <text x="130" y="219" font-size="11" font-weight="700" fill="white" letter-spacing="1">DADOS — COLETA E VALIDAÇÃO</text>
+  <text x="794" y="219" text-anchor="end" font-size="10" fill="#93C5FD">Great Expectations · pandas · S3 / data lake</text>
+
+  <circle cx="96" cy="250" r="14" fill="#1D4ED8"/>
+  <text x="96" y="255" text-anchor="middle" font-size="12" font-weight="700" fill="white">1</text>
+  <text x="120" y="245" font-size="13" font-weight="600" fill="#1e3a8a">Coleta de novos dados</text>
+  <text x="120" y="263" font-size="12" fill="#475569">KC Assessor incremental ou batch · merge com demographics via zipcode</text>
+
+  <circle cx="96" cy="290" r="14" fill="#1D4ED8"/>
+  <text x="96" y="295" text-anchor="middle" font-size="12" font-weight="700" fill="white">2</text>
+  <text x="120" y="285" font-size="13" font-weight="600" fill="#1e3a8a">Validação de qualidade</text>
+  <text x="120" y="303" font-size="12" fill="#475569">Schema · volume mínimo · distribuição das features dentro do range histórico</text>
+
+  <!-- Gate dentro do box DADOS -->
+  <rect x="84" y="318" width="510" height="22" rx="11" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1.5"/>
+  <text x="339" y="333" text-anchor="middle" font-size="11" font-weight="600" fill="#92400E">Gate: schema correto? volume ≥ mínimo? distribuição ok?</text>
+  <text x="794" y="333" text-anchor="end" font-size="11" font-weight="600" fill="#DC2626">✕ falha → alerta · sem treino</text>
+
+  <!-- Seta DADOS → TREINAMENTO -->
+  <line x1="440" y1="350" x2="440" y2="394" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="454" y="361" width="72" height="17" rx="8" fill="#F1F5F9"/>
+  <text x="490" y="374" text-anchor="middle" font-size="10" font-weight="600" fill="#475569">dados ok</text>
+
+  <!-- ══════════════════════════════════════════════════════
+       TREINAMENTO   y=394  h=164  ends=558
+       Steps: cy=442 (Δ+40) cy=482 (Δ+40) cy=522
+  ══════════════════════════════════════════════════════ -->
+  <g filter="url(#sh)">
+    <rect x="60" y="394" width="760" height="164" rx="14" fill="white" stroke="#C4B5FD" stroke-width="1.5"/>
+  </g>
+  <rect x="60" y="394" width="760" height="32" fill="#7C3AED" clip-path="url(#ctr)"/>
+  <text x="130" y="415" font-size="11" font-weight="700" fill="white" letter-spacing="1">TREINAMENTO</text>
+  <text x="794" y="415" text-anchor="end" font-size="10" fill="#DDD6FE">XGBoost · early stopping · split temporal</text>
+
+  <circle cx="96" cy="442" r="14" fill="#7C3AED"/>
+  <text x="96" y="447" text-anchor="middle" font-size="12" font-weight="700" fill="white">3</text>
+  <text x="120" y="437" font-size="13" font-weight="600" fill="#4C1D95">Full retrain ou windowed retrain</text>
+  <text x="120" y="455" font-size="12" fill="#475569">Full: todos os dados históricos · windowed: últimos N meses (mais rápido a concept drift)</text>
+
+  <circle cx="96" cy="482" r="14" fill="#7C3AED"/>
+  <text x="96" y="487" text-anchor="middle" font-size="12" font-weight="700" fill="white">4</text>
+  <text x="120" y="477" font-size="13" font-weight="600" fill="#4C1D95">XGBoost com early stopping — 10% holdout interno</text>
+  <text x="120" y="495" font-size="12" fill="#475569">Hiperparâmetros fixos · n_estimators determinado por early stopping (50 rounds)</text>
+
+  <circle cx="96" cy="522" r="14" fill="#7C3AED"/>
+  <text x="96" y="527" text-anchor="middle" font-size="12" font-weight="700" fill="white">5</text>
+  <text x="120" y="517" font-size="13" font-weight="600" fill="#4C1D95">Avaliação no holdout temporal mais recente</text>
+  <text x="120" y="535" font-size="12" fill="#475569">Split estritamente temporal — nunca misturar dados do futuro no treino</text>
+
+  <!-- Seta TREINAMENTO → AVALIAÇÃO -->
+  <line x1="440" y1="558" x2="440" y2="600" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ══════════════════════════════════════════════════════
+       AVALIAÇÃO   y=600  h=162  ends=762
+       Steps: cy=648 (Δ+40) cy=688
+       Gate fail inside box: y=718  h=22  ends=740  (22px gap até fundo)
+  ══════════════════════════════════════════════════════ -->
+  <g filter="url(#sh)">
+    <rect x="60" y="600" width="760" height="162" rx="14" fill="white" stroke="#86EFAC" stroke-width="1.5"/>
+  </g>
+  <rect x="60" y="600" width="760" height="32" fill="#15803D" clip-path="url(#ce)"/>
+  <text x="130" y="621" font-size="11" font-weight="700" fill="white" letter-spacing="1">AVALIAÇÃO — GATES AUTOMÁTICOS</text>
+  <text x="794" y="621" text-anchor="end" font-size="10" fill="#86EFAC">Todos os gates devem passar para promover</text>
+
+  <circle cx="96" cy="648" r="14" fill="#15803D"/>
+  <text x="96" y="653" text-anchor="middle" font-size="12" font-weight="700" fill="white">6</text>
+  <text x="120" y="643" font-size="13" font-weight="600" fill="#14532D">Gate 1 — Thresholds absolutos</text>
+  <text x="120" y="661" font-size="12" fill="#475569">MAE &lt; US$ 80.000 · R² &gt; 0.85 · Coverage P10–P90 &gt; 75% · MAPE &lt; 15%</text>
+
+  <circle cx="96" cy="688" r="14" fill="#15803D"/>
+  <text x="96" y="693" text-anchor="middle" font-size="12" font-weight="700" fill="white">7</text>
+  <text x="120" y="683" font-size="13" font-weight="600" fill="#14532D">Gate 2 — Comparação com produção</text>
+  <text x="120" y="701" font-size="12" fill="#475569">Novo MAE ≥ 2% melhor que o modelo atual? — se não melhora, mantém o atual em produção</text>
+
+  <!-- Gate fail dentro do box AVALIAÇÃO -->
+  <rect x="84" y="718" width="692" height="22" rx="11" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5"/>
+  <text x="430" y="733" text-anchor="middle" font-size="11" font-weight="600" fill="#DC2626">Gate falhou → alerta ao time · modelo atual permanece em produção · sem deploy automático</text>
+
+  <!-- Seta AVALIAÇÃO → DEPLOY -->
+  <line x1="440" y1="762" x2="440" y2="806" stroke="#CBD5E1" stroke-width="1.5" marker-end="url(#arr)"/>
+  <rect x="454" y="774" width="104" height="17" rx="8" fill="#F1F5F9"/>
+  <text x="506" y="787" text-anchor="middle" font-size="10" font-weight="600" fill="#15803D">todos aprovados</text>
+
+  <!-- ══════════════════════════════════════════════════════
+       DEPLOY   y=806  h=120  ends=926
+       Steps: cy=854 (Δ+40) cy=894
+  ══════════════════════════════════════════════════════ -->
+  <g filter="url(#sh)">
+    <rect x="60" y="806" width="760" height="120" rx="14" fill="white" stroke="#FCD34D" stroke-width="1.5"/>
+  </g>
+  <rect x="60" y="806" width="760" height="32" fill="#D97706" clip-path="url(#cdp)"/>
+  <text x="130" y="827" font-size="11" font-weight="700" fill="white" letter-spacing="1">REGISTRO + DEPLOY</text>
+  <text x="794" y="827" text-anchor="end" font-size="10" fill="#FDE68A">MLflow · S3 · ECS Blue/Green</text>
+
+  <circle cx="96" cy="854" r="14" fill="#D97706"/>
+  <text x="96" y="859" text-anchor="middle" font-size="12" font-weight="700" fill="white">8</text>
+  <text x="120" y="849" font-size="13" font-weight="600" fill="#78350F">Registrar no MLflow + salvar artefatos no S3</text>
+  <text x="120" y="867" font-size="12" fill="#475569">version · metrics · trained_at · approved_by · artifacts_s3_path</text>
+
+  <circle cx="96" cy="894" r="14" fill="#D97706"/>
+  <text x="96" y="899" text-anchor="middle" font-size="12" font-weight="700" fill="white">9</text>
+  <text x="120" y="889" font-size="13" font-weight="600" fill="#78350F">Deploy blue/green com aprovação manual</text>
+  <text x="120" y="907" font-size="12" fill="#475569">Rollback &lt; 30s se métricas degradarem nas primeiras 48h · modelo anterior em standby</text>
+</svg>
