@@ -413,16 +413,6 @@ docker-compose up --build
 
 ---
 
-## Próximos Passos
-
-- [ ] Monitoramento de drift nas distribuições de entrada (PSI por feature)
-- [ ] Dashboard de performance do modelo com histórico de métricas por janela temporal
-- [ ] Model registry com versionamento explícito e metadata de cada run
-- [ ] Pipeline de reentreino automatizado (gatilho por volume ou degradação)
-- [ ] Cache de predições frequentes (Redis)
-- [ ] Expansão da knowledge base com dados de mercado mais recentes
-
----
 
 ## Documentação
 
