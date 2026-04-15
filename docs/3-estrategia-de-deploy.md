@@ -6,36 +6,10 @@
 
 A solução em produção é composta por dois serviços independentes hospedados no Railway, conectados por uma API REST:
 
-```
-┌─────────────────────────────────────┐
-│         Usuário (navegador)         │
-└────────────────┬────────────────────┘
-                 │ HTTPS
-                 ▼
-┌─────────────────────────────────────┐
-│    Frontend (React)                 │
-│    Railway — serviço 2              │
-│    Nginx serving dist/ estático     │
-└────────────────┬────────────────────┘
-                 │ HTTP / JSON
-                 │ VITE_API_BASE_URL
-                 ▼
-┌─────────────────────────────────────┐
-│    Backend (FastAPI + Uvicorn)      │
-│    Railway — serviço 1              │
-│    Porta 8080                       │
-│                                     │
-│  ┌─────────────┐  ┌──────────────┐  │
-│  │  ML Model   │  │  RAG + LLM   │  │
-│  │  XGBoost    │  │  FAISS       │  │
-│  │  artifacts/ │  │  OpenAI/Groq │  │
-│  └─────────────┘  └──────────────┘  │
-│                                     │
-│  ┌────────────────────────────────┐ │
-│  │  PostgreSQL (Railway managed)  │ │
-│  └────────────────────────────────┘ │
-└─────────────────────────────────────┘
-```
+> **Diagrama interativo:** [`docs/diagrams/01-system-architecture.excalidraw`](diagrams/01-system-architecture.excalidraw)  
+> Abra no VS Code com a extensão **Excalidraw** ou em [excalidraw.com](https://excalidraw.com) → Abrir arquivo.
+
+![Arquitetura do sistema](diagrams/01-system-architecture.excalidraw)
 
 Os dois serviços são deployados e escalados de forma independente. O frontend é um build estático servido por Nginx — não tem lógica de servidor além de roteamento. Toda a computação ocorre na API.
 
@@ -46,7 +20,7 @@ Os dois serviços são deployados e escalados de forma independente. O frontend 
 ### 2.1 Frontend (React + Vite + Nginx)
 
 **Responsabilidade:** interface do usuário  
-**Tecnologia:** React 18, TypeScript, Tailwind CSS, shadcn/ui  
+**stack:** React , TypeScript, Tailwind , shadcn 
 **Diretório:** `frontend/`  
 **Configuração Railway:** Root Directory = `frontend`, usa `frontend/Dockerfile`
 
@@ -112,36 +86,23 @@ Quando disponível, cada chamada ao `/predict` é registrada com timestamp, feat
 
 ## 3. Fluxo de Inferência
 
-Fluxo completo para uma chamada ao `/predict`:
+**Fluxo `/predict`** — diagrama interativo:
 
-```
-1. Usuário preenche formulário no React
-2. Frontend monta JSON com as features do imóvel
-3. POST /predict → API
-4. API valida o payload com Pydantic
-5. Preprocessador aplica DerivedHousingFeatures (feature engineering)
-6. Preprocessador aplica ColumnTransformer (scaling + encoding)
-7. XGBoost p50 retorna log-previsão → expm1 → preço em dólares
-8. XGBoost p10 e p90 retornam limites do intervalo → expm1
-9. API consulta metadata.json para mediana do zipcode (comparação de mercado)
-10. API registra predição no banco (se disponível)
-11. API retorna JSON com: preço, p10, p90, mediana do zipcode, features resumidas
-12. React renderiza cartão de resultado com gradiente e comparação
-```
+> [`docs/diagrams/02-inference-flow.excalidraw`](diagrams/02-inference-flow.excalidraw)
 
-Fluxo para `/chat`:
+![Fluxo de inferência](diagrams/02-inference-flow.excalidraw)
 
-```
+**Fluxo `/chat`:**
+
 1. Usuário digita pergunta no chat
 2. Frontend envia: pergunta + dados do imóvel + previsão atual
-3. POST /chat → API
+3. `POST /chat` → API
 4. RAG retriever gera embedding da pergunta
 5. Busca vetorial no FAISS → top-4 trechos relevantes
 6. Prompt montado: contexto recuperado + dados do imóvel + previsão + pergunta
 7. LLM (OpenAI GPT-4o-mini ou Groq Llama 3.1) gera resposta
 8. API retorna resposta em texto
 9. React exibe no painel de chat
-```
 
 ---
 
@@ -264,17 +225,7 @@ Não há model registry formal — a versão em produção é aquela incluída n
 
 Para uma operação mais robusta, o fluxo ideal seria:
 
-```
-Treino local / CI
-      ↓
-Avaliação automática (métricas vs threshold)
-      ↓
-Registro no model registry (MLflow, Weights & Biases ou tabela no banco)
-      ↓
-Artifact store (S3, GCS ou Railway Volume)
-      ↓
-Deploy: API carrega versão mais recente aprovada no startup
-```
+Treino local / CI → Avaliação automática (métricas vs threshold) → Registro no model registry (MLflow, W&B ou tabela no banco) → Artifact store (S3, GCS ou Railway Volume) → Deploy: API carrega versão mais recente aprovada no startup.
 
 Isso permite rollback para versão anterior sem rebuild Docker, comparação histórica de métricas por versão e auditoria de quando cada modelo entrou em produção.
 

@@ -75,24 +75,10 @@ O reentreino não precisa ser agendado em calendário fixo. Gatilhos baseados em
 
 ## 5. Pipeline de Reentreino
 
-```
-1. Coleta de dados novos
-      ↓
-2. Limpeza e validação (mesmo pipeline de pré-processamento)
-      ↓
-3. Concatenar com dados históricos (full retrain)
-   ou usar apenas janela recente (windowed retrain)
-      ↓
-4. Treino com os mesmos hiperparâmetros base + early stopping
-      ↓
-5. Avaliação no holdout temporal mais recente
-      ↓
-6. Comparar métricas com o modelo em produção
-      ↓
-7. Decisão: promover ou rejeitar
-      ↓
-8. Se promovido: atualizar artefatos e rebuildar Docker
-```
+> **Diagrama interativo:** [`docs/diagrams/03-retraining-pipeline.excalidraw`](diagrams/03-retraining-pipeline.excalidraw)  
+> Abra no VS Code com a extensão **Excalidraw** ou em [excalidraw.com](https://excalidraw.com).
+
+![Pipeline de reentreino](diagrams/03-retraining-pipeline.excalidraw)
 
 **Full retrain vs windowed retrain:**
 
@@ -125,19 +111,9 @@ O processo de promoção deve ser feito com controles para evitar interrupção 
 
 ### Abordagem recomendada (blue-green)
 
-```
-Produção atual (modelo v1) → continua servindo tráfego
+> **Diagrama interativo:** [`docs/diagrams/04-bluegreen-deploy.excalidraw`](diagrams/04-bluegreen-deploy.excalidraw)
 
-Modelo v2 buildado → health check em ambiente de staging
-      ↓
-Validação manual das previsões para N imóveis de referência
-      ↓
-Switch de tráfego: v2 passa a ser produção, v1 mantido como fallback
-      ↓
-Monitoramento por 48h: métricas, erros, feedback de usuário
-      ↓
-Se estável: v1 descartado | Se problema: rollback imediato para v1
-```
+![Blue-green deploy](diagrams/04-bluegreen-deploy.excalidraw)
 
 Na arquitetura atual (Railway), o switch é feito via novo deploy da imagem Docker. O rollback é viável via Railway Deployments (reverter para build anterior).
 
@@ -182,4 +158,4 @@ Após a promoção de um novo modelo, manter monitoramento ativo por 30 dias:
 
 ---
 
-*Diagrama do fluxo de reentreino: [`diagrams/retraining_flow.md`](../diagrams/retraining_flow.md)*
+*Diagramas: [`docs/diagrams/`](diagrams/)*
